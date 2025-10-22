@@ -276,6 +276,10 @@ pub struct RmArgs {
     /// Directory where deleted files rest (for testing/compatibility)
     #[arg(long = "graveyard", hide = true)]
     pub graveyard: Option<PathBuf>,
+
+    /// Override all safety checks (DANGEROUS! Use with extreme caution)
+    #[arg(long = "yes-i-am-100-percent-certain", hide = true)]
+    pub override_safety: bool,
 }
 
 /// Interactive mode derived from arguments
@@ -550,7 +554,7 @@ fn remove_target<const FILE_LOCK: bool>(
 
 **File:** `src/rm_compat.rs`
 
-Add helper function:
+Add helper functions:
 ```rust
 /// Check if path is the root filesystem
 fn is_root_path(path: &Path) -> Result<bool, Error> {
@@ -571,6 +575,78 @@ fn is_root_path(path: &Path) -> Result<bool, Error> {
             Ok(false)
         }
     }
+}
+
+/// Check home directory depth protection (rip2 safety enhancement)
+///
+/// Blocks recursive removal of paths fewer than 3 levels deep within /home
+/// to prevent catastrophic mistakes like `rm -r ~` or `rm -r /home/user/Documents`
+///
+/// Examples:
+/// - /home/jan              -> Error (depth 2)
+/// - /home/jan/Desktop      -> Error (depth 3)
+/// - /home/jan/Desktop/proj -> OK (depth 4)
+fn check_home_directory_depth(path: &Path, override_safety: bool) -> Result<(), Error> {
+    // Skip check if safety override enabled
+    if override_safety {
+        return Ok(());
+    }
+
+    let canonical = dunce::canonicalize(path)?;
+    let path_str = canonical.to_string_lossy();
+
+    #[cfg(unix)]
+    {
+        // Check if path is within /home
+        if path_str.starts_with("/home/") {
+            // Count directory depth: /home/user/dir1/dir2/dir3
+            let parts: Vec<&str> = path_str.split('/').filter(|s| !s.is_empty()).collect();
+
+            // parts[0] = "home"
+            // parts[1] = username
+            // parts[2] = first level dir
+            // parts[3] = second level dir (minimum safe depth)
+
+            if parts.len() < 4 {
+                return Err(Error::new(
+                    ErrorKind::PermissionDenied,
+                    format!(
+                        "refusing to recursively remove '{}': path is too shallow (depth protection)\n\
+                         Hint: Use --yes-i-am-100-percent-certain to override (DANGEROUS!)",
+                        path.display()
+                    ),
+                ));
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        // Check if path is within C:\Users
+        if path_str.starts_with("C:\\Users\\") || path_str.starts_with("C:/Users/") {
+            // Normalize to forward slashes for easier parsing
+            let normalized = path_str.replace('\\', "/");
+            let parts: Vec<&str> = normalized.split('/').filter(|s| !s.is_empty()).collect();
+
+            // parts[0] = "C:"
+            // parts[1] = "Users"
+            // parts[2] = username
+            // parts[3] = first level dir (minimum safe depth)
+
+            if parts.len() < 4 {
+                return Err(Error::new(
+                    ErrorKind::PermissionDenied,
+                    format!(
+                        "refusing to recursively remove '{}': path is too shallow (depth protection)\n\
+                         Hint: Use --yes-i-am-100-percent-certain to override (DANGEROUS!)",
+                        path.display()
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Get device ID of a path (for --preserve-root=all and --one-file-system)
@@ -601,10 +677,17 @@ fn remove_target<const FILE_LOCK: bool>(
     interactive: InteractiveMode,
     preserve_root: PreserveRoot,
     one_file_system: bool,
+    override_safety: bool,
     mode: &impl TestingMode,
     stream: &mut impl Write,
 ) -> Result<(), Error> {
-    // Check preserve-root protection
+    // FIRST: Check home directory depth protection (rip2 enhancement)
+    // This runs BEFORE preserve-root check
+    if recursive {
+        check_home_directory_depth(target, override_safety)?;
+    }
+
+    // SECOND: Check preserve-root protection (GNU rm compatible)
     match preserve_root {
         PreserveRoot::None => {
             // No protection

@@ -109,6 +109,43 @@ rm: cannot remove 'file.txt': No such file or directory
 | `rm -r /` | Would fail (permission) | Error: "refusing to remove '/' recursively" | Error ✓ |
 | `rm -r --no-preserve-root /` | Would fail (permission) | Allowed (scary!) | Allowed (scary!) ✓ |
 
+### Removing Shallow Home Paths (rip2 Enhancement) 🛡️
+
+**Safety Feature:** rip2 adds depth protection for /home directories to prevent catastrophic mistakes.
+
+| Command | rip | rm-compat | GNU rm |
+|---------|-----|-----------|---------|
+| `rm -r /home` | Success/Fail | ❌ Error: "path is too shallow" | Success/Fail |
+| `rm -r /home/jan` | Success/Fail | ❌ Error: "path is too shallow" | Success/Fail |
+| `rm -r /home/jan/Desktop` | Success/Fail | ❌ Error: "path is too shallow" | Success/Fail |
+| `rm -r /home/jan/Desktop/project` | Success | ✅ Allowed (safe depth) | Success |
+| `rm -r ~/Documents` | Success | ❌ Error: "path is too shallow" | Success |
+| `rm -r ~/Documents/work` | Success | ✅ Allowed (safe depth) | Success |
+
+**Override with extreme caution:**
+```bash
+rm -r --yes-i-am-100-percent-certain /home/jan/Desktop
+# ⚠️ DANGEROUS! Only use when absolutely certain!
+```
+
+**Protection Rule:**
+- Blocks paths **fewer than 3 levels deep** within `/home`
+- Counts from `/home/user/`: need at least one subdirectory level
+- Independent of `--preserve-root` (always active unless override)
+- Works on Windows too: `C:\Users\username\` requires same depth
+
+**Why This Matters:**
+```bash
+# Common catastrophic mistakes this prevents:
+rm -r ~              # Expands to /home/user (BLOCKED ✓)
+rm -r ~/Documents    # Only 1 level deep (BLOCKED ✓)
+rm -r $HOME/Desktop  # Only 1 level deep (BLOCKED ✓)
+
+# Safe operations still work:
+rm -r ~/Documents/old-projects  # 2 levels deep (ALLOWED ✓)
+rm -r ~/Desktop/temp-files      # 2 levels deep (ALLOWED ✓)
+```
+
 ### Empty vs Non-Empty Directories
 
 | Command | rip | rm-compat | GNU rm |
@@ -222,6 +259,19 @@ When implementing rm-compat mode, test ALL these scenarios:
 - [ ] `--preserve-root` explicitly: `rm -r --preserve-root /` fails
 - [ ] `--no-preserve-root`: `rm -r --no-preserve-root /` works (if permissions allow)
 - [ ] `--preserve-root=all` protects mount points
+
+### Home Directory Depth Protection (rip2 Enhancement)
+- [ ] `rm -r /home` fails with depth protection error
+- [ ] `rm -r /home/user` fails with depth protection error
+- [ ] `rm -r /home/user/Desktop` fails with depth protection error
+- [ ] `rm -r /home/user/Desktop/project` succeeds (safe depth)
+- [ ] `rm -r ~` fails (expands to /home/user)
+- [ ] `rm -r ~/Documents` fails (1 level deep)
+- [ ] `rm -r ~/Documents/work` succeeds (2 levels deep)
+- [ ] `--yes-i-am-100-percent-certain` overrides depth protection
+- [ ] Depth protection independent of `--preserve-root`
+- [ ] Works on Windows: `C:\Users\user\Desktop` blocked
+- [ ] Works on Windows: `C:\Users\user\Desktop\project` allowed
 
 ### Verbose Output
 - [ ] `-v` prints each file

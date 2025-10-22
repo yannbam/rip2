@@ -164,15 +164,101 @@ if (x.recursive && preserve_root) {
 - No special protection for `/`
 - Would happily move `/` to graveyard if permissions allowed
 
+#### Enhanced Safety: Home Directory Depth Protection (rip2 Extension)
+
+**CRITICAL SAFETY FEATURE:** Beyond GNU rm's preserve-root, rip2 adds additional protection for shallow home directory paths to prevent catastrophic mistakes.
+
+**Protection Rule:**
+- Block `rm -r` on any path **above** `/home/user/subdir/subdir/` depth (i.e., fewer than 3 levels deep within /home)
+- Requires explicit `--yes-i-am-100-percent-certain` flag to override
+
+**Examples:**
+```bash
+rm -r /                              # ❌ Blocked by --preserve-root
+rm -r /home                          # ❌ Blocked by depth protection
+rm -r /home/jan                      # ❌ Blocked by depth protection
+rm -r /home/jan/Desktop              # ❌ Blocked by depth protection
+rm -r /home/jan/Desktop/project      # ✅ Allowed (safe depth)
+rm -r /home/jan/src/project/build    # ✅ Allowed (safe depth)
+
+# Override (use with extreme caution!)
+rm -r --yes-i-am-100-percent-certain /home/jan/Desktop
+```
+
+**Rationale:**
+- Prevents accidental `rm -r ~` (expands to `/home/user`)
+- Prevents `rm -r /home/user/Documents` (one level too shallow)
+- Forces deliberate action for potentially destructive operations
+- Depth-based: deeper paths are safer (more specific intent)
+
+**Implementation Logic:**
+```rust
+fn check_home_directory_depth(path: &Path) -> Result<(), Error> {
+    let canonical = dunce::canonicalize(path)?;
+    let path_str = canonical.to_string_lossy();
+
+    // Check if path is within /home
+    if path_str.starts_with("/home/") {
+        // Count directory depth: /home/user/dir1/dir2/dir3
+        let parts: Vec<&str> = path_str.split('/').filter(|s| !s.is_empty()).collect();
+
+        // parts[0] = "home"
+        // parts[1] = username
+        // parts[2] = first level dir
+        // parts[3] = second level dir (minimum safe depth)
+
+        if parts.len() < 4 {
+            return Err(Error::new(
+                ErrorKind::PermissionDenied,
+                format!(
+                    "refusing to recursively remove '{}': path is too shallow (depth protection)\n\
+                     Hint: Use --yes-i-am-100-percent-certain to override (DANGEROUS!)",
+                    path.display()
+                )
+            ));
+        }
+    }
+
+    Ok(())
+}
+```
+
+**Override Flag:**
+```rust
+#[arg(long = "yes-i-am-100-percent-certain", hide = true)]
+/// Override safety checks (DANGEROUS! Use with extreme caution)
+pub override_safety: bool,
+```
+
+**Windows Equivalent:**
+```
+C:\Users\username\             -> Blocked
+C:\Users\username\Documents\   -> Blocked
+C:\Users\username\Documents\project\  -> Allowed
+```
+
 #### Required Changes
 
-Add root protection:
-1. Detect if target is `/` (or canonicalizes to `/`)
-2. In rm-compat mode with recursive + preserve_root:
-   - Get root device/inode
-   - Check target against root
-   - Error out if match: `"refusing to remove '/' recursively"`
-3. `--no-preserve-root` disables this check
+Add multi-level root protection:
+1. **Standard preserve-root** (GNU rm compatible):
+   - Detect if target is `/` (or canonicalizes to `/`)
+   - In rm-compat mode with recursive + preserve_root:
+     - Get root device/inode
+     - Check target against root
+     - Error out if match: `"refusing to remove '/' recursively"`
+   - `--no-preserve-root` disables this check
+
+2. **Home directory depth protection** (rip2 enhancement):
+   - Check path depth for paths under /home
+   - Block if fewer than 3 levels deep within /home
+   - Require `--yes-i-am-100-percent-certain` to override
+   - Independent of `--preserve-root` flag
+
+3. **Priority:**
+   - Depth protection runs FIRST
+   - If `--yes-i-am-100-percent-certain` provided, skip depth check
+   - Then run preserve-root check
+   - If `--no-preserve-root` provided, skip root check
 
 ### 3.3 Verbose Output
 

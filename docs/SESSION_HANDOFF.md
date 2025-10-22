@@ -13,6 +13,8 @@ Successfully completed comprehensive preparation for adding GNU rm-compatible mo
 
 **Key Achievement:** 100% of preparation tasks complete, ready for implementation.
 
+**🛡️ SAFETY ENHANCEMENT ADDED:** Home directory depth protection to prevent catastrophic `rm -r ~` mistakes!
+
 ---
 
 ## What Was Accomplished
@@ -356,7 +358,20 @@ When implementing, verify these behaviors match GNU rm:
 - [ ] Recovery still works (rip -u)
 - [ ] Backward compatibility (rip mode unchanged)
 
-**Total: 45 test scenarios**
+### Home Directory Depth Protection (11 tests) 🛡️
+- [ ] `rm -r /home` blocked
+- [ ] `rm -r /home/user` blocked
+- [ ] `rm -r /home/user/Desktop` blocked
+- [ ] `rm -r /home/user/Desktop/project` allowed
+- [ ] `rm -r ~` blocked (expands to /home/user)
+- [ ] `rm -r ~/Documents` blocked
+- [ ] `rm -r ~/Documents/work` allowed
+- [ ] `--yes-i-am-100-percent-certain` override works
+- [ ] Depth check independent of `--preserve-root`
+- [ ] Windows: `C:\Users\user\Desktop` blocked
+- [ ] Windows: `C:\Users\user\Desktop\project` allowed
+
+**Total: 56 test scenarios** (45 original + 11 depth protection)
 
 ---
 
