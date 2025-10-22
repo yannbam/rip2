@@ -1,0 +1,135 @@
+{
+  "uuid": "42aa25f5-65e7-4750-ab8e-3860d4fe9803",
+  "name": "rm-compat-mode",
+  "details": "Implementation plan for adding rm-compatible mode to rip2.\n\nThe goal is to modify rip to detect when it's invoked as 'rm' (via symlink) and behave 100% like GNU rm while maintaining backward compatibility with existing rip behavior.\n\nThis session focuses on PREPARATION ONLY - no implementation yet.",
+  "tasks": [
+    {
+      "name": "Analysis",
+      "details": "Analyze GNU rm source code and rip2 codebase to understand architecture and identify what needs to be modified",
+      "status": "completed",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Study rm.c behavior",
+          "details": "Deep dive into rm.c from GNU coreutils v9.4:\n- Command-line parsing (getopt_long)\n- Interactive prompting logic (RMI_NEVER/SOMETIMES/ALWAYS)\n- Preserve-root protection\n- Verbose output format\n- Error handling and exit codes",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "9a8733d8-4b8d-436a-ae9f-37050c29dd4f",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:26:35.848Z"
+        },
+        {
+          "name": "Map rip2 architecture",
+          "details": "Use lsp-cli-file to understand rip2's current structure:\n- main.rs: entry point and CLI parsing\n- How rip currently handles deletion\n- Graveyard management code\n- Current interactive mode (-i flag conflict)",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "b9aea558-4908-49b3-9ac6-0d96bee94fd8",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:28:30.883Z"
+        },
+        {
+          "name": "Identify incompatibilities",
+          "details": "Create detailed list of behavior differences:\n- Flag conflicts (rip -i vs rm -i)\n- Missing rm features (verbose, preserve-root, one-file-system, etc.)\n- Different default behaviors\n- Exit code differences\n- Prompt message format differences",
+          "status": "completed",
+          "priority": "high",
+          "uuid": "f4e60c8e-71cc-415e-9333-7def50cdd122",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:28:30.883Z"
+        }
+      ],
+      "uuid": "f1af18b1-b0a7-4dc8-9506-d47b8a1f2795",
+      "created_at": "2025-10-22T00:25:55.760Z",
+      "updated_at": "2025-10-22T00:25:55.760Z",
+      "completion_percentage": 100
+    },
+    {
+      "name": "Design",
+      "details": "Design the rm-compatibility architecture without writing code yet",
+      "status": "completed",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Binary name detection",
+          "details": "Design how rip detects invocation mode:\n- Check argv[0] for 'rm' suffix\n- Environment variable override option?\n- --rm-compat explicit flag as backup",
+          "status": "completed",
+          "priority": "high",
+          "uuid": "67f2b30e-0603-459d-914a-3c9486411728",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:31:52.148Z"
+        },
+        {
+          "name": "CLI argument mapping",
+          "details": "Map all rm flags to rip behavior:\n- -f, --force → disable prompts, ignore errors\n- -i → interactive always (conflicts with current rip -i!)\n- -I → interactive once\n- --interactive=WHEN → parse never/once/always\n- -r, -R, --recursive → enable recursive\n- -d, --dir → remove empty dirs\n- -v, --verbose → show each removal\n- --preserve-root[=all] → protect /\n- --no-preserve-root → allow /\n- --one-file-system → stay on same filesystem",
+          "status": "completed",
+          "priority": "high",
+          "uuid": "e2f3dd10-00b9-479e-912a-9c22b9bf2a4c",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:31:52.148Z"
+        },
+        {
+          "name": "Behavioral changes",
+          "details": "Define how behavior changes in rm-compat mode:\n- Prompting logic (when to ask user)\n- Error messages format\n- Exit codes (SUCCESS=0, ERROR=1)\n- Verbose output format\n- Root protection mechanism",
+          "status": "completed",
+          "priority": "medium",
+          "uuid": "5ab3ef31-d655-4f13-ac76-440d26a17a16",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:31:52.148Z"
+        },
+        {
+          "name": "Backward compatibility",
+          "details": "Ensure existing rip usage still works:\n- All current rip flags work when invoked as 'rip'\n- No breaking changes to rip behavior\n- Clear separation between rip-mode and rm-mode",
+          "status": "completed",
+          "priority": "high",
+          "uuid": "8793d2fc-f7e6-4557-9855-5db339c9eec5",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:31:52.148Z"
+        }
+      ],
+      "uuid": "8c7d1e3d-3888-4f6c-9d23-c908ac39ed7b",
+      "created_at": "2025-10-22T00:25:55.761Z",
+      "updated_at": "2025-10-22T00:25:55.761Z",
+      "completion_percentage": 100
+    },
+    {
+      "name": "Documentation",
+      "details": "Create comprehensive documentation for the implementation",
+      "status": "completed",
+      "priority": "medium",
+      "sub_tasks": [
+        {
+          "name": "Technical spec",
+          "details": "Write detailed technical specification document:\n- Architecture overview\n- Mode detection flow\n- Flag mapping table\n- Behavior comparison matrix (rip vs rm)\n- Code structure changes needed",
+          "status": "completed",
+          "priority": "high",
+          "uuid": "21f39f27-b559-4d64-b27b-275066ac70f8",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:28:31.008Z"
+        },
+        {
+          "name": "Implementation guide",
+          "details": "Create step-by-step implementation guide:\n- Files that need modification\n- New modules/structs to add\n- Testing strategy\n- Edge cases to handle",
+          "status": "completed",
+          "priority": "medium",
+          "uuid": "4cd957e8-309c-459e-bf22-09261d804222",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:30:51.298Z"
+        },
+        {
+          "name": "User documentation",
+          "details": "Draft updates to README.md:\n- How to install as rm replacement\n- Symlink setup instructions\n- Compatibility notes\n- Migration guide for rm users",
+          "status": "completed",
+          "priority": "low",
+          "uuid": "71067159-76dc-439d-902a-b526ef15db39",
+          "created_at": "2025-10-22T00:25:55.761Z",
+          "updated_at": "2025-10-22T00:31:52.278Z"
+        }
+      ],
+      "uuid": "35cd8e47-87da-4278-9ed6-7dba910f1341",
+      "created_at": "2025-10-22T00:25:55.761Z",
+      "updated_at": "2025-10-22T00:25:55.761Z",
+      "completion_percentage": 100
+    }
+  ],
+  "created_at": "2025-10-22T00:25:55.761Z",
+  "updated_at": "2025-10-22T00:31:52.433Z"
+}

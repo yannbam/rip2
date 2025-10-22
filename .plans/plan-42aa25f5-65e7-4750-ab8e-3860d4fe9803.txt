@@ -1,0 +1,21 @@
+🌳 "rm-compat-mode"
+📝 Implementation plan for adding rm-compatible mode to rip2.
+
+The goal is to modify rip to detect when it's invoked as 'rm' (via symlink) and behave 100% like GNU rm while maintaining backward compatibility with existing rip behavior.
+
+This session focuses on PREPARATION ONLY - no implementation yet.
+📊 ██████████ 100% (13/13 tasks)
+
+├── ✅ |Analysis| "Analyze GNU rm source code and rip2 codebase to understand architecture and identify what needs to be modified" (🔴) (100%)
+│   ├── ✅ |Study rm.c behavior| "Deep dive into rm.c from GNU coreutils v9.4:\n- Command-line parsing (getopt_long)\n- Interactive prompting logic (RMI_NEVER/SOMETIMES/ALWAYS)\n- Preserve-root protection\n- Verbose output format\n- Error handling and exit codes" (🚨)
+│   ├── ✅ |Map rip2 architecture| "Use lsp-cli-file to understand rip2's current structure:\n- main.rs: entry point and CLI parsing\n- How rip currently handles deletion\n- Graveyard management code\n- Current interactive mode (-i flag conflict)" (🚨)
+│   └── ✅ |Identify incompatibilities| "Create detailed list of behavior differences:\n- Flag conflicts (rip -i vs rm -i)\n- Missing rm features (verbose, preserve-root, one-file-system, etc.)\n- Different default behaviors\n- Exit code differences\n- Prompt message format differences" (🔴)
+├── ✅ |Design| "Design the rm-compatibility architecture without writing code yet" (🔴) (100%)
+│   ├── ✅ |Binary name detection| "Design how rip detects invocation mode:\n- Check argv[0] for 'rm' suffix\n- Environment variable override option?\n- --rm-compat explicit flag as backup" (🔴)
+│   ├── ✅ |CLI argument mapping| "Map all rm flags to rip behavior:\n- -f, --force → disable prompts, ignore errors\n- -i → interactive always (conflicts with current rip -i!)\n- -I → interactive once\n- --interactive=WHEN → parse never/once/always\n- -r, -R, --recursive → enable recursive\n- -d, --dir → remove empty dirs\n- -v, --verbose → show each removal\n- --preserve-root[=all] → protect /\n- --no-preserve-root → allow /\n- --one-file-system → stay on same filesystem" (🔴)
+│   ├── ✅ |Behavioral changes| "Define how behavior changes in rm-compat mode:\n- Prompting logic (when to ask user)\n- Error messages format\n- Exit codes (SUCCESS=0, ERROR=1)\n- Verbose output format\n- Root protection mechanism" (🟡)
+│   └── ✅ |Backward compatibility| "Ensure existing rip usage still works:\n- All current rip flags work when invoked as 'rip'\n- No breaking changes to rip behavior\n- Clear separation between rip-mode and rm-mode" (🔴)
+└── ✅ |Documentation| "Create comprehensive documentation for the implementation" (🟡) (100%)
+    ├── ✅ |Technical spec| "Write detailed technical specification document:\n- Architecture overview\n- Mode detection flow\n- Flag mapping table\n- Behavior comparison matrix (rip vs rm)\n- Code structure changes needed" (🔴)
+    ├── ✅ |Implementation guide| "Create step-by-step implementation guide:\n- Files that need modification\n- New modules/structs to add\n- Testing strategy\n- Edge cases to handle" (🟡)
+    └── ✅ |User documentation| "Draft updates to README.md:\n- How to install as rm replacement\n- Symlink setup instructions\n- Compatibility notes\n- Migration guide for rm users" (🔵)
