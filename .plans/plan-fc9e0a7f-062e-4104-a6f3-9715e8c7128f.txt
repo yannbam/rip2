@@ -1,0 +1,7 @@
+🌳 "session-threads-cleanup"
+📝 Close the three open threads from Session 93ba0f21. Take time, do it well.
+📊 ██████████ 100% (3/3 tasks)
+
+├── ✅ |Thread 1: Dead Code| "Remove the unused `require_root()` convenience function from safety.rs. It was created speculatively but the injectable version is used everywhere instead." (🔴)
+├── ✅ |Thread 2: Line Numbers| "The Critical Code Locations table in CLAUDE.md has outdated line numbers. Decide how to handle: remove line numbers (they shift), update them, or restructure the table." (🟡)
+└── ✅ |Thread 3: Root Check UX| "Document the UX decision about root check placement. Currently checks after user confirms but before deletion. Alternative would be fail-fast before prompting. Record the rationale." (🟡)

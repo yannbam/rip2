@@ -103,18 +103,6 @@ pub fn require_root_for_permanent_deletion(checker: &impl RootChecker) -> Result
     }
 }
 
-/// Convenience function using the system root checker.
-///
-/// This is the primary function to call in production code.
-///
-/// # Returns
-///
-/// * `Ok(())` if the current process has root privileges
-/// * `Err` with `PermissionDenied` if the process is not running as root
-pub fn require_root() -> Result<(), Error> {
-    require_root_for_permanent_deletion(&SystemRootChecker)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

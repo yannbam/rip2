@@ -77,14 +77,16 @@ tests/
   unit_tests.rs          Unit tests
 ```
 
-### Critical Code Locations
+### Safety-Critical Code
 
-| Location | Purpose | Safety-Critical |
-|----------|---------|-----------------|
-| `lib.rs:59-63` | Decompose (empty graveyard) | YES - needs root gate |
-| `lib.rs:186-212` | Delete file in graveyard | YES - needs root gate |
-| `lib.rs:573-591` | `get_graveyard()` default | Change to ~/.graveyard |
-| `args.rs` | CLI parsing | Split into rip/rm modes |
+Use `lsp-cli-file rust src/lib.rs` for current line numbers. Key areas:
+
+| Area | How to Find | Status |
+|------|-------------|--------|
+| Decompose gate | `grep -n "cli.decompose" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
+| In-graveyard delete gate | `grep -n "already in the graveyard" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
+| Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ⏳ Phase 2: Change /tmp → ~/.graveyard |
+| CLI parsing | `args.rs` | ⏳ Phase 3: Split for rip/rm modes |
 
 ---
 
@@ -119,7 +121,7 @@ These insights emerged from actual implementation sessions:
 
 3. **Decide error placement as UX** — Root checks can go before prompting (fail fast) or after confirmation (check at moment of danger). This is a UX decision, not just technical. Think about it upfront.
 
-4. **Be intentional about convenience wrappers** — Creating `require_root()` as a wrapper around `require_root_for_permanent_deletion(&SystemRootChecker)` seemed useful, but it went unused because we needed the injectable version everywhere. Don't create conveniences speculatively.
+4. **Be intentional about convenience wrappers** — Creating `require_root()` as a wrapper around `require_root_for_permanent_deletion(&SystemRootChecker)` seemed useful, but it went unused because we needed the injectable version everywhere. Don't create conveniences speculatively. *(The unused function was removed in Session 1a3f4571.)*
 
 5. **Question inherited version choices** — The plan specified `dirs = "5"` but v6 existed. Investigation showed the v6 breaking change (config_dir on macOS) doesn't affect our use of home_dir(). We upgraded. Don't assume version choices in plans were deliberate — verify and update.
 
@@ -174,15 +176,19 @@ Check PlanAndTrack for live status:
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 
-### Threads for Next Session
+### Design Decisions
 
-These were noted but not explored in Session 93ba0f21:
+**Root check placement (decided Session 1a3f4571):** Root checks happen *after* user confirmation but *before* deletion. This separates two concerns:
 
-1. **Unused `require_root()` function** — Created in safety.rs as a convenience wrapper but never used (we use the injectable version everywhere). Decide: remove as dead code, or keep for future use?
+- **Intent confirmation**: "Do you really want to permanently delete?" (prompt)
+- **Permission check**: "Are you allowed to?" (root gate)
 
-2. **Line number references outdated** — The "Critical Code Locations" table above references L59-63, L186-212, L573-591. These have shifted due to Phase 1 edits. Update or remove the line references.
+This order was chosen because:
+1. The prompt confirms the user's intent is understood before checking permission
+2. The error "Only root can permanently delete" is actionable → re-run with sudo
+3. Fail-fast (checking first) could confuse: "Why didn't it ask me?"
 
-3. **Root check placement UX** — Currently checks *after* user confirms but *before* deletion. Alternative: check *before* prompting (fail fast). This is a UX decision worth revisiting if users report confusion.
+If users report confusion, reconsider—but the current design is intentional.
 
 ---
 
