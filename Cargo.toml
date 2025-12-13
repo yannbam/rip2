@@ -18,6 +18,7 @@ autobins = false
 [dependencies]
 anstyle = "1.0.6"
 chrono = "0.4.33"
+dirs = "6"
 clap = { version = "4.5", features = ["derive"] }
 clap_complete = "4.5"
 clap_complete_nushell = "4.5"
@@ -27,7 +28,7 @@ fs_extra = "1.3"
 walkdir = "2"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.29", features = ["fs"] }
+nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteuid().is_root()
 
 [dev-dependencies]
 assert_cmd = "2"

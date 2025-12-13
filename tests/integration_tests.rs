@@ -5,6 +5,7 @@ use rand::distributions::Alphanumeric;
 use rand::{Rng, SeedableRng};
 use rip2::args::Args;
 use rip2::record;
+use rip2::safety::MockRootChecker;
 use rip2::util::TestMode;
 use rip2::{self, util};
 use rstest::rstest;
@@ -102,6 +103,7 @@ fn test_bury_unbury(#[values(false, true)] decompose: bool, #[values(false, true
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
     if inspect {
@@ -132,6 +134,7 @@ fn test_bury_unbury(#[values(false, true)] decompose: bool, #[values(false, true
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
     let log_s = String::from_utf8(log).unwrap();
@@ -212,6 +215,7 @@ fn test_env(#[values("RIP_GRAVEYARD", "XDG_DATA_HOME")] env_var: &str) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -260,6 +264,7 @@ fn test_duplicate_file(
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -312,6 +317,7 @@ fn test_duplicate_file(
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -332,6 +338,7 @@ fn test_duplicate_file(
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -375,6 +382,7 @@ fn test_big_file(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -422,6 +430,7 @@ fn test_same_file_twice() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     );
 
     // Check the first use triggered the removal:
@@ -951,6 +960,7 @@ fn many_nest(#[values(1, 2, 3)] seed: u64) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     );
     assert!(result.is_ok());
     let log_s = String::from_utf8(log).unwrap();
@@ -971,6 +981,7 @@ fn many_nest(#[values(1, 2, 3)] seed: u64) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     );
     assert!(result.is_ok());
 
@@ -1002,6 +1013,7 @@ fn test_bury_unbury_bury_unbury() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1027,6 +1039,7 @@ fn test_bury_unbury_bury_unbury() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1055,6 +1068,7 @@ fn test_bury_unbury_bury_unbury() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1082,6 +1096,7 @@ fn test_bury_unbury_bury_unbury() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1203,6 +1218,7 @@ fn test_no_header() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     );
 
     // Check that we got the right error
@@ -1233,6 +1249,7 @@ fn test_no_header() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 }
@@ -1281,6 +1298,7 @@ fn test_legacy_date_format() {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     );
     env::set_current_dir(cur_dir).unwrap();
 
@@ -1316,6 +1334,7 @@ fn test_force_basic_bury(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1348,6 +1367,7 @@ fn test_force_decompose(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1392,6 +1412,7 @@ fn test_force_already_in_graveyard(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1410,6 +1431,7 @@ fn test_force_already_in_graveyard(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut log,
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1448,6 +1470,7 @@ fn test_force_special_file(#[values(false, true)] force: bool) {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
 
     if force {
@@ -1480,6 +1503,7 @@ fn test_force_inspect_error() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     )
     .expect_err("Expected error when using force and inspect together");
 
@@ -1521,6 +1545,7 @@ fn test_directory_permissions_preserved() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
 
     assert!(result.is_ok(), "Failed to rip file: {:?}", result);
@@ -1603,6 +1628,7 @@ fn test_deeply_nested_directory_permissions() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
 
     assert!(result.is_ok(), "Failed to rip file");
@@ -1694,6 +1720,7 @@ fn test_directory_rip_vs_file_rip_permissions() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
     assert!(result1.is_ok(), "Failed to rip directory");
 
@@ -1706,6 +1733,7 @@ fn test_directory_rip_vs_file_rip_permissions() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
     assert!(result2.is_ok(), "Failed to rip file");
 
@@ -1787,6 +1815,7 @@ fn test_graveyard_maintains_700_permissions() {
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     );
 
     assert!(result.is_ok(), "Failed to rip file");
@@ -1843,6 +1872,7 @@ fn test_unbury_directory_permissions(
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1863,6 +1893,7 @@ fn test_unbury_directory_permissions(
         },
         TestMode,
         &mut Vec::new(),
+        &MockRootChecker::root(),
     )
     .unwrap();
 
@@ -1886,4 +1917,216 @@ fn test_unbury_directory_permissions(
             sub_mode
         );
     }
+}
+
+// =============================================================================
+// SAFETY TESTS: Root-only permanent deletion enforcement
+// =============================================================================
+// These tests verify the core safety invariant:
+// Non-root users can NEVER permanently delete files via rm.
+
+/// Test that decompose (emptying graveyard) requires root privileges.
+/// Non-root user attempting decompose should get PermissionDenied error.
+#[test]
+fn test_decompose_requires_root_non_root_fails() {
+    let _env_lock = aquire_lock();
+    let test_env = TestEnv::new();
+
+    // Create a file and bury it first (as "root" to set up the test)
+    let test_file = test_env.src.join("test.txt");
+    fs::write(&test_file, "test data").unwrap();
+
+    rip2::run(
+        &Args {
+            targets: vec![test_file.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(),
+    )
+    .unwrap();
+
+    // Verify file is in graveyard
+    assert!(!test_file.exists());
+    assert!(test_env.graveyard.exists());
+
+    // Now try to decompose as non-root - should fail
+    let result = rip2::run(
+        &Args {
+            decompose: true,
+            force: true, // Skip prompt
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::non_root(), // Non-root user
+    );
+
+    // Should fail with PermissionDenied
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::PermissionDenied);
+    assert!(
+        err.to_string().contains("safe-rm"),
+        "Error message should mention safe-rm: {}",
+        err
+    );
+
+    // Graveyard should still exist (not deleted)
+    assert!(test_env.graveyard.exists());
+}
+
+/// Test that decompose succeeds for root user.
+#[test]
+fn test_decompose_requires_root_root_succeeds() {
+    let _env_lock = aquire_lock();
+    let test_env = TestEnv::new();
+
+    // Create a file and bury it
+    let test_file = test_env.src.join("test.txt");
+    fs::write(&test_file, "test data").unwrap();
+
+    rip2::run(
+        &Args {
+            targets: vec![test_file.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(),
+    )
+    .unwrap();
+
+    // Verify file is in graveyard
+    assert!(!test_file.exists());
+    assert!(test_env.graveyard.exists());
+
+    // Decompose as root - should succeed
+    let result = rip2::run(
+        &Args {
+            decompose: true,
+            force: true, // Skip prompt
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(), // Root user
+    );
+
+    // Should succeed
+    assert!(result.is_ok());
+
+    // Graveyard should be deleted
+    assert!(!test_env.graveyard.exists());
+}
+
+/// Test that deleting a file already in the graveyard requires root privileges.
+/// Non-root user should get PermissionDenied error.
+#[test]
+fn test_in_graveyard_delete_requires_root_non_root_fails() {
+    let _env_lock = aquire_lock();
+    let test_env = TestEnv::new();
+
+    // Create and bury a file
+    let test_file = test_env.src.join("test.txt");
+    fs::write(&test_file, "test data").unwrap();
+
+    rip2::run(
+        &Args {
+            targets: vec![test_file.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(),
+    )
+    .unwrap();
+
+    // Get the path in the graveyard
+    let grave_path = util::join_absolute(
+        &test_env.graveyard,
+        dunce::canonicalize(&test_file).unwrap_or(test_file.clone()),
+    );
+    assert!(grave_path.exists(), "File should be in graveyard");
+
+    // Try to delete the file in graveyard as non-root (force to skip prompt)
+    let result = rip2::run(
+        &Args {
+            targets: vec![grave_path.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            force: true,
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::non_root(), // Non-root user
+    );
+
+    // Should fail with PermissionDenied
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::PermissionDenied);
+    assert!(
+        err.to_string().contains("safe-rm"),
+        "Error message should mention safe-rm: {}",
+        err
+    );
+
+    // File should still exist in graveyard (not deleted)
+    assert!(grave_path.exists());
+}
+
+/// Test that deleting a file already in the graveyard succeeds for root user.
+#[test]
+fn test_in_graveyard_delete_requires_root_root_succeeds() {
+    let _env_lock = aquire_lock();
+    let test_env = TestEnv::new();
+
+    // Create and bury a file
+    let test_file = test_env.src.join("test.txt");
+    fs::write(&test_file, "test data").unwrap();
+
+    rip2::run(
+        &Args {
+            targets: vec![test_file.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(),
+    )
+    .unwrap();
+
+    // Get the path in the graveyard
+    let grave_path = util::join_absolute(
+        &test_env.graveyard,
+        dunce::canonicalize(&test_file).unwrap_or(test_file.clone()),
+    );
+    assert!(grave_path.exists(), "File should be in graveyard");
+
+    // Delete the file in graveyard as root
+    let result = rip2::run(
+        &Args {
+            targets: vec![grave_path.clone()],
+            graveyard: Some(test_env.graveyard.clone()),
+            force: true,
+            ..Args::default()
+        },
+        TestMode,
+        &mut Vec::new(),
+        &MockRootChecker::root(), // Root user
+    );
+
+    // Should succeed
+    assert!(result.is_ok());
+
+    // File should be deleted from graveyard
+    assert!(!grave_path.exists());
 }

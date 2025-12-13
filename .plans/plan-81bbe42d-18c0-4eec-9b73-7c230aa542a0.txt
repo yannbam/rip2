@@ -1,13 +1,13 @@
 🌳 "safe-rm-implementation"
 📝 Transform rip2 into safe-rm: a drop-in replacement for rm where permanent deletion requires root. Core safety invariant: non-root users can NEVER permanently delete files via rm.
-📊 ░░░░░░░░░░ 0% (0/31 tasks)
+📊 █░░░░░░░░░ 19% (6/31 tasks)
 
-├── ⏸️ |Phase 1: Safety Foundation| "Gate permanent deletion with root-only checks. This MUST be completed first before any other changes." (🚨) (0%)
-│   ├── ⏸️ |Add dependencies| "Add libc = "0.2" under [target.'cfg(unix)'.dependencies] and dirs = "5" to Cargo.toml" (🔴)
-│   ├── ⏸️ |Create safety.rs| "New module src/safety.rs with:\n- is_root() using libc::geteuid() == 0\n- require_root_for_permanent_deletion() returning Error for non-root\n- RootChecker trait for testability" (🔴)
-│   ├── ⏸️ |Gate decompose| "Add root check at lib.rs L59-63 before fs::remove_dir_all(graveyard)" (🔴)
-│   ├── ⏸️ |Gate in-graveyard delete| "Add root check at lib.rs L186-212 before fs::remove_dir_all/remove_file" (🔴)
-│   └── ⏸️ |Write safety tests| "Tests with MockRootChecker:\n- decompose as non-root → Error\n- decompose as root → Success\n- in-graveyard delete as non-root → Error\n- in-graveyard delete as root → Success" (🔴)
+├── ✅ |Phase 1: Safety Foundation| "Gate permanent deletion with root-only checks. This MUST be completed first before any other changes." (🚨) (100%)
+│   ├── ✅ |Add dependencies| "Add libc = "0.2" under [target.'cfg(unix)'.dependencies] and dirs = "5" to Cargo.toml" (🔴)
+│   ├── ✅ |Create safety.rs| "New module src/safety.rs with:\n- is_root() using libc::geteuid() == 0\n- require_root_for_permanent_deletion() returning Error for non-root\n- RootChecker trait for testability" (🔴)
+│   ├── ✅ |Gate decompose| "Add root check at lib.rs L59-63 before fs::remove_dir_all(graveyard)" (🔴)
+│   ├── ✅ |Gate in-graveyard delete| "Add root check at lib.rs L186-212 before fs::remove_dir_all/remove_file" (🔴)
+│   └── ✅ |Write safety tests| "Tests with MockRootChecker:\n- decompose as non-root → Error\n- decompose as root → Success\n- in-graveyard delete as non-root → Error\n- in-graveyard delete as root → Success" (🔴)
 ├── ⏸️ |Phase 2: Graveyard Location| "Change default graveyard from /tmp/graveyard-$USER to ~/.graveyard" (🔴) (0%)
 │   ├── ⏸️ |Modify get_graveyard()| "lib.rs L573-591: Replace env::temp_dir() fallback with dirs::home_dir().join(".graveyard")" (🔴)
 │   └── ⏸️ |Update existing tests| "Tests expecting /tmp graveyard need updating for new ~/.graveyard default" (🟡)

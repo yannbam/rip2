@@ -4,6 +4,7 @@ use std::io;
 use std::process::ExitCode;
 
 use rip2::args::Commands;
+use rip2::safety::SystemRootChecker;
 use rip2::{args, completions, util};
 
 fn main() -> ExitCode {
@@ -38,7 +39,7 @@ fn main() -> ExitCode {
 
             ////////////////////////////////////////////////////////////
             // Main code ///////////////////////////////////////////////
-            let result = rip2::run(&cli, mode, &mut stream);
+            let result = rip2::run(&cli, mode, &mut stream, &SystemRootChecker);
             ////////////////////////////////////////////////////////////
 
             if let Err(ref e) = result {

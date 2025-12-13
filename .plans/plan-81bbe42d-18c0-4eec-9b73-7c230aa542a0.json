@@ -6,59 +6,59 @@
     {
       "name": "Phase 1: Safety Foundation",
       "details": "Gate permanent deletion with root-only checks. This MUST be completed first before any other changes.",
-      "status": "pending",
+      "status": "completed",
       "priority": "urgent",
       "sub_tasks": [
         {
           "name": "Add dependencies",
           "details": "Add libc = \"0.2\" under [target.'cfg(unix)'.dependencies] and dirs = \"5\" to Cargo.toml",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "083a0f02-14d9-4f58-8918-d9ea1fa3db74",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:31:38.594Z"
+          "updated_at": "2025-12-13T15:38:52.581Z"
         },
         {
           "name": "Create safety.rs",
           "details": "New module src/safety.rs with:\n- is_root() using libc::geteuid() == 0\n- require_root_for_permanent_deletion() returning Error for non-root\n- RootChecker trait for testability",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "49e405b2-20ac-41b8-971c-b8864b904063",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T15:40:14.367Z"
         },
         {
           "name": "Gate decompose",
           "details": "Add root check at lib.rs L59-63 before fs::remove_dir_all(graveyard)",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "27175827-e408-4194-9e95-3ee1a56a645f",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T15:40:55.179Z"
         },
         {
           "name": "Gate in-graveyard delete",
           "details": "Add root check at lib.rs L186-212 before fs::remove_dir_all/remove_file",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "5ef1e19a-1f32-4c31-b605-a7a56415a6d7",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T15:41:47.678Z"
         },
         {
           "name": "Write safety tests",
           "details": "Tests with MockRootChecker:\n- decompose as non-root → Error\n- decompose as root → Success\n- in-graveyard delete as non-root → Error\n- in-graveyard delete as root → Success",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "696eb4dd-c3f7-4f4c-be1f-b499e89b41bf",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T15:49:04.629Z"
         }
       ],
       "uuid": "122c1ebb-3971-4a71-b4bf-c587464a7a6e",
       "created_at": "2025-12-13T15:20:52.561Z",
       "updated_at": "2025-12-13T15:20:52.561Z",
-      "completion_percentage": 0
+      "completion_percentage": 100
     },
     {
       "name": "Phase 2: Graveyard Location",
@@ -302,5 +302,5 @@
     }
   ],
   "created_at": "2025-12-13T15:20:52.563Z",
-  "updated_at": "2025-12-13T15:31:38.594Z"
+  "updated_at": "2025-12-13T15:49:10.146Z"
 }

@@ -109,6 +109,24 @@ tests/
 - Use `e/code` commenting style (intention before implementation)
 - Preserve existing test patterns from `integration_tests.rs`
 
+### Lessons Learned
+
+These insights emerged from actual implementation sessions:
+
+1. **Check existing deps before adding new ones** — The codebase already had `nix` which provides `geteuid().is_root()` — a *safer* API than raw libc! We initially added `libc` per the plan, then discovered nix provides everything we need with better ergonomics. Removed libc entirely. Always check what existing deps offer.
+
+2. **Estimate ripple effects of signature changes** — Adding a parameter to `run()` required updating 30+ test call sites. When changing core function signatures, scout the call sites first and plan for bulk updates (sed can help).
+
+3. **Decide error placement as UX** — Root checks can go before prompting (fail fast) or after confirmation (check at moment of danger). This is a UX decision, not just technical. Think about it upfront.
+
+4. **Be intentional about convenience wrappers** — Creating `require_root()` as a wrapper around `require_root_for_permanent_deletion(&SystemRootChecker)` seemed useful, but it went unused because we needed the injectable version everywhere. Don't create conveniences speculatively.
+
+5. **Question inherited version choices** — The plan specified `dirs = "5"` but v6 existed. Investigation showed the v6 breaking change (config_dir on macOS) doesn't affect our use of home_dir(). We upgraded. Don't assume version choices in plans were deliberate — verify and update.
+
+6. **Adversarial testing is non-negotiable** — Actually break the safety code and verify tests fail. "Tests pass" means nothing if they don't catch real bugs.
+
+7. **The plan is a starting point, not a constraint** — The planning instance had codebase access but wrote the plan in one session without deeply investigating every decision. Implementing instances gain hands-on, in-depth knowledge that planning couldn't anticipate. Question specific details. Suggest improvements, corrections, or alternatives. After discussing with janbam, diverge freely. The plan serves us; we don't serve the plan.
+
 ---
 
 ## Quick Reference
@@ -128,14 +146,15 @@ cargo run -- -d          # decompose (root only!)
 RIP_MODE=rm cargo run -- file.txt
 ```
 
-### Dependencies to Add
+### Dependencies Added (Phase 1)
 
 ```toml
 [dependencies]
-dirs = "5"
+dirs = "6"  # Only using home_dir() - v6 breaking change (config_dir on macOS) doesn't affect us
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteuid().is_root()
+# Note: libc NOT needed - nix re-exports it and provides safer APIs
 ```
 
 ### Platform Support
@@ -148,10 +167,22 @@ libc = "0.2"
 
 ## Current Status
 
+**Phase 1: Safety Foundation — COMPLETE** (Session 93ba0f21)
+
 Check PlanAndTrack for live status:
 ```
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
+
+### Threads for Next Session
+
+These were noted but not explored in Session 93ba0f21:
+
+1. **Unused `require_root()` function** — Created in safety.rs as a convenience wrapper but never used (we use the injectable version everywhere). Decide: remove as dead code, or keep for future use?
+
+2. **Line number references outdated** — The "Critical Code Locations" table above references L59-63, L186-212, L573-591. These have shifted due to Phase 1 edits. Update or remove the line references.
+
+3. **Root check placement UX** — Currently checks *after* user confirms but *before* deletion. Alternative: check *before* prompting (fail fast). This is a UX decision worth revisiting if users report confusion.
 
 ---
 

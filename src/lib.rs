@@ -29,16 +29,23 @@ use std::os::windows::fs::symlink_file as symlink;
 pub mod args;
 pub mod completions;
 pub mod record;
+pub mod safety;
 pub mod util;
 
 use args::Args;
 use record::{Record, RecordItem, DEFAULT_FILE_LOCK};
+use safety::{require_root_for_permanent_deletion, RootChecker};
 
 const LINES_TO_INSPECT: usize = 6;
 const FILES_TO_INSPECT: usize = 6;
 pub const BIG_FILE_THRESHOLD: u64 = 500_000_000; // 500 MB
 
-pub fn run(cli: &Args, mode: impl util::TestingMode, stream: &mut impl Write) -> Result<(), Error> {
+pub fn run(
+    cli: &Args,
+    mode: impl util::TestingMode,
+    stream: &mut impl Write,
+    root_checker: &impl RootChecker,
+) -> Result<(), Error> {
     args::validate_args(cli)?;
     let graveyard: &PathBuf = &get_graveyard(cli.graveyard.clone());
 
@@ -59,6 +66,8 @@ pub fn run(cli: &Args, mode: impl util::TestingMode, stream: &mut impl Write) ->
     if cli.decompose {
         // In force mode, skip the prompt to decompose
         if cli.force || util::prompt_yes("Really unlink the entire graveyard?", &mode, stream)? {
+            // Require root privileges for permanent deletion
+            require_root_for_permanent_deletion(root_checker)?;
             fs::remove_dir_all(graveyard)?;
         }
     } else if let Some(ref mut graves_to_exhume) = cli.unbury.clone() {
@@ -144,6 +153,7 @@ pub fn run(cli: &Args, mode: impl util::TestingMode, stream: &mut impl Write) ->
                 &mode,
                 stream,
                 cli.force,
+                root_checker,
             )?;
         }
     }
@@ -162,6 +172,7 @@ fn bury_target<const FILE_LOCK: bool>(
     mode: &impl util::TestingMode,
     stream: &mut impl Write,
     force: bool,
+    root_checker: &impl RootChecker,
 ) -> Result<(), Error> {
     // Check if source exists
     let metadata = &fs::symlink_metadata(target).map_err(|_| {
@@ -199,6 +210,8 @@ fn bury_target<const FILE_LOCK: bool>(
                 stream,
             )?
         {
+            // Require root privileges for permanent deletion
+            require_root_for_permanent_deletion(root_checker)?;
             if fs::remove_dir_all(source).is_err() {
                 fs::remove_file(source).map_err(|e| {
                     Error::new(e.kind(), format!("Couldn't unlink {}", source.display()))
