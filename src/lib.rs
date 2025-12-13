@@ -594,9 +594,13 @@ pub fn get_graveyard(graveyard: Option<PathBuf>) -> PathBuf {
                 }
                 env_graveyard.push_str("graveyard");
                 PathBuf::from(env_graveyard)
+            } else if let Some(home) = dirs::home_dir() {
+                // Default: ~/.graveyard
+                home.join(".graveyard")
             } else {
+                // Fallback if home directory cannot be determined
                 let user = util::get_user();
-                env::temp_dir().join(format!("graveyard-{user}"))
+                PathBuf::from("/var/tmp").join(format!("graveyard-{user}"))
             }
         },
         |flag| flag,

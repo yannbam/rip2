@@ -230,11 +230,11 @@ fn test_graveyard_path() {
     std::env::remove_var("RIP_GRAVEYARD");
     std::env::remove_var("XDG_DATA_HOME");
 
-    // Check default graveyard path
+    // Check default graveyard path (now ~/.graveyard)
     let graveyard = rip2::get_graveyard(None);
     assert_eq!(
         graveyard,
-        std::env::temp_dir().join(format!("graveyard-{}", rip2::util::get_user()))
+        dirs::home_dir().unwrap().join(".graveyard")
     );
 }
 

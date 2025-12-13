@@ -227,3 +227,47 @@ The `safe-rm-implementation` plan still references outdated info (mentions libc 
 When asked "do you want to look into any of those uncertainties more deeply?" — the honest answer was no. The work felt complete. Sometimes "done" is actually done.
 
 The session was about closing loops well, not about velocity. Not flashy, but solid.
+
+---
+
+## Session 7bf25a31 — Phase 2: Graveyard Location
+
+**Date:** 2025-12-13
+**Branch:** safe-rm-opus45
+**Accomplishment:** Completed Phase 2 (Graveyard Location) — both tasks
+
+### The Work
+
+| Change | File | Lines |
+|--------|------|-------|
+| Default graveyard → ~/.graveyard | src/lib.rs | 597-604 |
+| Updated test expectation | tests/unit_tests.rs | 233-238 |
+
+**New graveyard resolution order:**
+1. `--graveyard <PATH>` flag (explicit)
+2. `$RIP_GRAVEYARD` env var
+3. `$XDG_DATA_HOME/graveyard`
+4. `~/.graveyard` (NEW default)
+5. `/var/tmp/graveyard-$USER` (fallback if no home dir)
+
+### Implementation Notes
+
+The change was minimal and clean:
+- Replaced `env::temp_dir().join(format!("graveyard-{user}"))` with `dirs::home_dir().join(".graveyard")`
+- Added fallback to `/var/tmp/graveyard-$USER` for edge cases where home directory cannot be determined
+- The `dirs` crate was already present from Phase 1
+
+### Adversarial Testing
+
+Corrupted the graveyard path to `.join("WRONG")` and verified `test_graveyard_path` caught it:
+```
+left: "/home/jan/WRONG"
+right: "/home/jan/.graveyard"
+```
+Test correctly failed, confirming it catches real bugs.
+
+### Session Notes
+
+- **Clean focused session:** One phase, done completely
+- **All 87 tests passing** (52 integration + 31 unit + 3 safety + 1 doctest)
+- **Next phase:** Phase 3 (Mode Detection & CLI Restructure)

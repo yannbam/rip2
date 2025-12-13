@@ -97,7 +97,7 @@ Use `lsp-cli-file rust src/lib.rs` for current line numbers. Key areas:
 |------|-------------|--------|
 | Decompose gate | `grep -n "cli.decompose" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
 | In-graveyard delete gate | `grep -n "already in the graveyard" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
-| Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ⏳ Phase 2: Change /tmp → ~/.graveyard |
+| Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ✅ Default: ~/.graveyard |
 | CLI parsing | `args.rs` | ⏳ Phase 3: Split for rip/rm modes |
 
 ---
@@ -182,11 +182,14 @@ nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteui
 ## Current Status
 
 **Phase 1: Safety Foundation — COMPLETE** (Session 93ba0f21)
+**Phase 2: Graveyard Location — COMPLETE** (Session 7bf25a31)
 
 Check PlanAndTrack for live status:
 ```
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
+
+**Next:** Phase 3 (Mode Detection & CLI Restructure)
 
 ### Design Decisions
 
