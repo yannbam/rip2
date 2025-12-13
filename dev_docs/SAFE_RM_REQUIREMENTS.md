@@ -168,15 +168,19 @@ No automatic cleanup. Root manages disk space as needed.
 
 To make safe-rm the system's `rm`:
 
-1. Install safe-rm binary (e.g., `/usr/local/bin/safe-rm`)
+1. Install safe-rm binary: `sudo cp safe-rm /usr/local/bin/safe-rm`
 2. Move original rm: `sudo mv /usr/bin/rm /usr/sbin/rm-real`
-3. Create symlink: `sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm`
+3. Create symlinks:
+   ```bash
+   sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm       # rm mode
+   sudo ln -s /usr/local/bin/safe-rm /usr/local/bin/rip  # rip mode
+   ```
 4. Ensure `/usr/sbin` is only in root's PATH
 
 Result:
-- Normal users: `rm` → safe-rm (graveyard, no permanent deletion)
-- Root: `rm` → safe-rm, but can permanently delete
-- Root: `rm-real` → original rm (if truly needed)
+- `rm file` → safe-rm in rm mode (rm-compatible interface)
+- `rip file` → safe-rm in rip mode (rip-style interface with -s, -u, etc.)
+- `rm-real` → original rm (root only, for emergencies)
 
 ---
 
