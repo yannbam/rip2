@@ -204,6 +204,14 @@ The goal is protecting against **accidental deletion via the rm command**, which
 - Cross-platform: Linux, macOS, Windows
 - Root detection via `libc::geteuid()`
 
+## Reference Materials
+
+- `dev_docs/rm-reference/` - GNU coreutils rm source code for reference:
+  - `rm.c` - Main rm implementation
+  - `remove.c` - File removal logic
+  - `remove.h` - Headers and data structures
+- GNU rm documentation: https://www.gnu.org/software/coreutils/rm
+
 ---
 
 ## Deliverables
