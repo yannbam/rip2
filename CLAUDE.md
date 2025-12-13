@@ -77,28 +77,29 @@ mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 
 ```
 src/
-  main.rs         Entry point, CLI dispatch
-  lib.rs          Core logic: run(), bury_target(), get_graveyard()
-  args.rs         CLI arguments (clap) - will become args/ module
+  main.rs         Entry point, mode detection, CLI dispatch (run_rip_mode/run_rm_mode)
+  lib.rs          Core logic: run(), ExecutionMode, detect_mode_from_inputs()
+  args.rs         CLI arguments (clap) - will become args/ module in Phase 4
   record.rs       Deletion record keeping
   util.rs         Helper functions
-  safety.rs       NEW: Root checks, path protection
+  safety.rs       Root checks, path protection
 
 tests/
   integration_tests.rs   Comprehensive integration tests
-  unit_tests.rs          Unit tests
+  unit_tests.rs          Unit tests (includes mode detection tests)
 ```
 
-### Safety-Critical Code
+### Key Code Areas
 
-Use `lsp-cli-file rust src/lib.rs` for current line numbers. Key areas:
+Use `lsp-cli-file rust src/lib.rs` for current line numbers.
 
 | Area | How to Find | Status |
 |------|-------------|--------|
 | Decompose gate | `grep -n "cli.decompose" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
 | In-graveyard delete gate | `grep -n "already in the graveyard" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
+| Mode detection | `grep -n "ExecutionMode" src/lib.rs` — enum and detect_mode_from_inputs() | ✅ Phase 3 complete |
 | Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ✅ Default: ~/.graveyard |
-| CLI parsing | `args.rs` | ⏳ Phase 3: Split for rip/rm modes |
+| CLI parsing | `args.rs` | ⏳ Phase 4: Split for rip/rm modes |
 
 ---
 
@@ -183,13 +184,14 @@ nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteui
 
 **Phase 1: Safety Foundation — COMPLETE** (Session 93ba0f21)
 **Phase 2: Graveyard Location — COMPLETE** (Session 7bf25a31)
+**Phase 3: Mode Detection — COMPLETE** (Session ea890cd4)
 
 Check PlanAndTrack for live status:
 ```
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 
-**Next:** Phase 3 (Mode Detection & CLI Restructure)
+**Next:** Phase 4 (rm Mode Implementation)
 
 ### Design Decisions
 
