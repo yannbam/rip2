@@ -93,50 +93,41 @@
     {
       "name": "Phase 3: Mode Detection",
       "details": "Add dual-mode CLI support: rip mode vs rm mode based on binary name",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "sub_tasks": [
         {
           "name": "Add mode detection",
           "details": "main.rs: ExecutionMode enum, detect_mode() checking argv[0] and RIP_MODE env",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "632309a4-e6c7-4d81-8d34-b2c475a6e3b7",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
-        },
-        {
-          "name": "Split args.rs into module",
-          "details": "Create src/args/mod.rs, rip.rs (current Args), rm.rs (new RmArgs)",
-          "status": "pending",
-          "priority": "high",
-          "uuid": "98bb565e-94d9-474b-b061-c3e5539e8a46",
-          "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T23:15:56.381Z"
         },
         {
           "name": "Update main.rs dispatch",
           "details": "Separate run_rip_mode() and run_rm_mode() functions",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "ca663c58-f581-435b-92b9-749909818a34",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T23:15:56.381Z"
         },
         {
           "name": "Write mode detection tests",
           "details": "Test argv[0]=\"rm\" → Rm mode, argv[0]=\"rip\" → Rip mode, RIP_MODE override",
-          "status": "pending",
+          "status": "completed",
           "priority": "medium",
           "uuid": "0717cd80-791b-4ad9-b255-1c392cc1af74",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-13T23:15:56.381Z"
         }
       ],
       "uuid": "fca07980-90b2-40e1-8676-c0a2834c92ba",
       "created_at": "2025-12-13T15:20:52.562Z",
       "updated_at": "2025-12-13T15:20:52.562Z",
-      "completion_percentage": 0
+      "completion_percentage": 100
     },
     {
       "name": "Phase 4: rm Mode Implementation",
@@ -144,6 +135,15 @@
       "status": "pending",
       "priority": "high",
       "sub_tasks": [
+        {
+          "name": "Split args.rs into module",
+          "details": "Create src/args/mod.rs (ExecutionMode, re-exports), rip.rs (current Args renamed to RipArgs), rm.rs (new RmArgs)",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "98bb565e-94d9-474b-b061-c3e5539e8a46",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-14T00:00:00.000Z"
+        },
         {
           "name": "Create RmArgs struct",
           "details": "src/args/rm.rs: -f, -r/-R, -d, -v, --preserve-root, --no-preserve-root, --one-file-system",
@@ -302,5 +302,5 @@
     }
   ],
   "created_at": "2025-12-13T15:20:52.563Z",
-  "updated_at": "2025-12-13T17:29:20.614Z"
+  "updated_at": "2025-12-13T23:16:02.298Z"
 }

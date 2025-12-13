@@ -309,3 +309,94 @@ fn test_directory_size_output() {
     assert!(numeric_size >= 3.0);
     assert!(numeric_size < 6.0);
 }
+
+// ============================================================================
+// Mode Detection Tests
+// ============================================================================
+
+use rip2::{detect_mode_from_inputs, ExecutionMode};
+use std::ffi::OsStr;
+
+#[rstest]
+fn test_mode_detection_default() {
+    // No env, binary name is "rip" → default to Rip mode
+    assert_eq!(
+        detect_mode_from_inputs(None, OsStr::new("rip")),
+        ExecutionMode::Rip
+    );
+}
+
+#[rstest]
+fn test_mode_detection_binary_name_rm() {
+    // No env, binary name is "rm" → Rm mode
+    assert_eq!(
+        detect_mode_from_inputs(None, OsStr::new("rm")),
+        ExecutionMode::Rm
+    );
+}
+
+#[rstest]
+fn test_mode_detection_binary_name_safe_rm_does_not_match() {
+    // "safe-rm" should NOT trigger Rm mode (not exactly "rm")
+    assert_eq!(
+        detect_mode_from_inputs(None, OsStr::new("safe-rm")),
+        ExecutionMode::Rip
+    );
+}
+
+#[rstest]
+fn test_mode_detection_env_rm() {
+    // RIP_MODE=rm overrides binary name
+    assert_eq!(
+        detect_mode_from_inputs(Some("rm"), OsStr::new("rip")),
+        ExecutionMode::Rm
+    );
+}
+
+#[rstest]
+fn test_mode_detection_env_rip() {
+    // RIP_MODE=rip explicitly sets Rip mode
+    assert_eq!(
+        detect_mode_from_inputs(Some("rip"), OsStr::new("rm")),
+        ExecutionMode::Rip
+    );
+}
+
+#[rstest]
+fn test_mode_detection_env_case_insensitive() {
+    // RIP_MODE should be case-insensitive
+    assert_eq!(
+        detect_mode_from_inputs(Some("RM"), OsStr::new("rip")),
+        ExecutionMode::Rm
+    );
+    assert_eq!(
+        detect_mode_from_inputs(Some("Rm"), OsStr::new("rip")),
+        ExecutionMode::Rm
+    );
+    assert_eq!(
+        detect_mode_from_inputs(Some("RIP"), OsStr::new("rm")),
+        ExecutionMode::Rip
+    );
+}
+
+#[rstest]
+fn test_mode_detection_invalid_env_falls_through() {
+    // Invalid RIP_MODE value falls through to binary name detection
+    assert_eq!(
+        detect_mode_from_inputs(Some("invalid"), OsStr::new("rm")),
+        ExecutionMode::Rm
+    );
+    assert_eq!(
+        detect_mode_from_inputs(Some(""), OsStr::new("rip")),
+        ExecutionMode::Rip
+    );
+}
+
+#[rstest]
+fn test_mode_detection_empty_binary_name() {
+    // Empty binary name defaults to Rip mode
+    assert_eq!(
+        detect_mode_from_inputs(None, OsStr::new("")),
+        ExecutionMode::Rip
+    );
+}

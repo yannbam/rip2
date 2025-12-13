@@ -32,6 +32,57 @@ pub mod record;
 pub mod safety;
 pub mod util;
 
+use std::ffi::OsStr;
+
+// ============================================================================
+// Execution Mode Detection
+// ============================================================================
+
+/// Execution mode: determines CLI behavior and argument parsing
+///
+/// TODO(Phase 4): Move to args/ module when splitting args.rs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionMode {
+    /// Original rip behavior: ergonomic deletion with graveyard
+    Rip,
+    /// rm-compatible mode: POSIX-like interface, files still go to graveyard
+    Rm,
+}
+
+/// Detect execution mode from given inputs (pure function for testability)
+///
+/// # Arguments
+/// * `env_mode` - Value of RIP_MODE environment variable, if set
+/// * `binary_name` - The filename portion of argv[0]
+///
+/// # Priority
+/// 1. RIP_MODE env ("rm" or "rip") — highest priority, for testing
+/// 2. Binary name — if exactly "rm", use Rm mode
+/// 3. Default to Rip mode
+pub fn detect_mode_from_inputs(env_mode: Option<&str>, binary_name: &OsStr) -> ExecutionMode {
+    // Check environment variable first (highest priority, for testing)
+    if let Some(mode_str) = env_mode {
+        match mode_str.to_lowercase().as_str() {
+            "rm" => return ExecutionMode::Rm,
+            "rip" => return ExecutionMode::Rip,
+            // Invalid values fall through to binary name detection
+            _ => {}
+        }
+    }
+
+    // Check if binary name is exactly "rm"
+    // This handles: "rm", "./rm", "/usr/bin/rm" (after Path::file_name extraction)
+    // Does NOT match: "safe-rm", "rip", etc.
+    if binary_name == "rm" {
+        return ExecutionMode::Rm;
+    }
+
+    // Default to Rip mode
+    ExecutionMode::Rip
+}
+
+// ============================================================================
+
 use args::Args;
 use record::{Record, RecordItem, DEFAULT_FILE_LOCK};
 use safety::{require_root_for_permanent_deletion, RootChecker};

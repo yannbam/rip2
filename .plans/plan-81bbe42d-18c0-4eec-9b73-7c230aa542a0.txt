@@ -1,6 +1,6 @@
 🌳 "safe-rm-implementation"
 📝 Transform rip2 into safe-rm: a drop-in replacement for rm where permanent deletion requires root. Core safety invariant: non-root users can NEVER permanently delete files via rm.
-📊 ██░░░░░░░░ 29% (9/31 tasks)
+📊 ████░░░░░░ 42% (13/31 tasks)
 
 ├── ✅ |Phase 1: Safety Foundation| "Gate permanent deletion with root-only checks. This MUST be completed first before any other changes." (🚨) (100%)
 │   ├── ✅ |Add dependencies| "Add libc = "0.2" under [target.'cfg(unix)'.dependencies] and dirs = "5" to Cargo.toml" (🔴)
@@ -11,12 +11,12 @@
 ├── ✅ |Phase 2: Graveyard Location| "Change default graveyard from /tmp/graveyard-$USER to ~/.graveyard" (🔴) (100%)
 │   ├── ✅ |Modify get_graveyard()| "lib.rs L573-591: Replace env::temp_dir() fallback with dirs::home_dir().join(".graveyard")" (🔴)
 │   └── ✅ |Update existing tests| "Tests expecting /tmp graveyard need updating for new ~/.graveyard default" (🟡)
-├── ⏸️ |Phase 3: Mode Detection| "Add dual-mode CLI support: rip mode vs rm mode based on binary name" (🔴) (0%)
-│   ├── ⏸️ |Add mode detection| "main.rs: ExecutionMode enum, detect_mode() checking argv[0] and RIP_MODE env" (🔴)
-│   ├── ⏸️ |Split args.rs into module| "Create src/args/mod.rs, rip.rs (current Args), rm.rs (new RmArgs)" (🔴)
-│   ├── ⏸️ |Update main.rs dispatch| "Separate run_rip_mode() and run_rm_mode() functions" (🔴)
-│   └── ⏸️ |Write mode detection tests| "Test argv[0]="rm" → Rm mode, argv[0]="rip" → Rip mode, RIP_MODE override" (🟡)
+├── ✅ |Phase 3: Mode Detection| "Add dual-mode CLI support: rip mode vs rm mode based on binary name" (🔴) (100%)
+│   ├── ✅ |Add mode detection| "main.rs: ExecutionMode enum, detect_mode() checking argv[0] and RIP_MODE env" (🔴)
+│   ├── ✅ |Update main.rs dispatch| "Separate run_rip_mode() and run_rm_mode() functions" (🔴)
+│   └── ✅ |Write mode detection tests| "Test argv[0]="rm" → Rm mode, argv[0]="rip" → Rip mode, RIP_MODE override" (🟡)
 ├── ⏸️ |Phase 4: rm Mode Implementation| "Full rm-compatible behavior with all supported flags" (🔴) (0%)
+│   ├── ⏸️ |Split args.rs into module| "Create src/args/mod.rs (ExecutionMode, re-exports), rip.rs (current Args renamed to RipArgs), rm.rs (new RmArgs)" (🔴)
 │   ├── ⏸️ |Create RmArgs struct| "src/args/rm.rs: -f, -r/-R, -d, -v, --preserve-root, --no-preserve-root, --one-file-system" (🔴)
 │   ├── ⏸️ |rm error format| "GNU rm format: "rm: cannot remove 'file': Reason"" (🔴)
 │   ├── ⏸️ |Force mode semantics| "rm -f nonexistent → exit 0; rm nonexistent → exit 1" (🔴)
