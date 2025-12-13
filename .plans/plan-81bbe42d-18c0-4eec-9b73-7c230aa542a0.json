@@ -1,0 +1,306 @@
+{
+  "uuid": "81bbe42d-18c0-4eec-9b73-7c230aa542a0",
+  "name": "safe-rm-implementation",
+  "details": "Transform rip2 into safe-rm: a drop-in replacement for rm where permanent deletion requires root. Core safety invariant: non-root users can NEVER permanently delete files via rm.",
+  "tasks": [
+    {
+      "name": "Phase 1: Safety Foundation",
+      "details": "Gate permanent deletion with root-only checks. This MUST be completed first before any other changes.",
+      "status": "pending",
+      "priority": "urgent",
+      "sub_tasks": [
+        {
+          "name": "Add dependencies",
+          "details": "Add libc = \"0.2\" under [target.'cfg(unix)'.dependencies] and dirs = \"5\" to Cargo.toml",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "083a0f02-14d9-4f58-8918-d9ea1fa3db74",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:31:38.594Z"
+        },
+        {
+          "name": "Create safety.rs",
+          "details": "New module src/safety.rs with:\n- is_root() using libc::geteuid() == 0\n- require_root_for_permanent_deletion() returning Error for non-root\n- RootChecker trait for testability",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "49e405b2-20ac-41b8-971c-b8864b904063",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Gate decompose",
+          "details": "Add root check at lib.rs L59-63 before fs::remove_dir_all(graveyard)",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "27175827-e408-4194-9e95-3ee1a56a645f",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Gate in-graveyard delete",
+          "details": "Add root check at lib.rs L186-212 before fs::remove_dir_all/remove_file",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "5ef1e19a-1f32-4c31-b605-a7a56415a6d7",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Write safety tests",
+          "details": "Tests with MockRootChecker:\n- decompose as non-root → Error\n- decompose as root → Success\n- in-graveyard delete as non-root → Error\n- in-graveyard delete as root → Success",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "696eb4dd-c3f7-4f4c-be1f-b499e89b41bf",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "122c1ebb-3971-4a71-b4bf-c587464a7a6e",
+      "created_at": "2025-12-13T15:20:52.561Z",
+      "updated_at": "2025-12-13T15:20:52.561Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "Phase 2: Graveyard Location",
+      "details": "Change default graveyard from /tmp/graveyard-$USER to ~/.graveyard",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Modify get_graveyard()",
+          "details": "lib.rs L573-591: Replace env::temp_dir() fallback with dirs::home_dir().join(\".graveyard\")",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "946722ff-2eb6-47e6-b362-9f46007d8a00",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Update existing tests",
+          "details": "Tests expecting /tmp graveyard need updating for new ~/.graveyard default",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "b0c47d0d-13d3-4d0f-b9f5-e336f2833493",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "b48da251-db79-48fd-9049-c8e607658d07",
+      "created_at": "2025-12-13T15:20:52.562Z",
+      "updated_at": "2025-12-13T15:20:52.562Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "Phase 3: Mode Detection",
+      "details": "Add dual-mode CLI support: rip mode vs rm mode based on binary name",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Add mode detection",
+          "details": "main.rs: ExecutionMode enum, detect_mode() checking argv[0] and RIP_MODE env",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "632309a4-e6c7-4d81-8d34-b2c475a6e3b7",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Split args.rs into module",
+          "details": "Create src/args/mod.rs, rip.rs (current Args), rm.rs (new RmArgs)",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "98bb565e-94d9-474b-b061-c3e5539e8a46",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Update main.rs dispatch",
+          "details": "Separate run_rip_mode() and run_rm_mode() functions",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "ca663c58-f581-435b-92b9-749909818a34",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Write mode detection tests",
+          "details": "Test argv[0]=\"rm\" → Rm mode, argv[0]=\"rip\" → Rip mode, RIP_MODE override",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "0717cd80-791b-4ad9-b255-1c392cc1af74",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "fca07980-90b2-40e1-8676-c0a2834c92ba",
+      "created_at": "2025-12-13T15:20:52.562Z",
+      "updated_at": "2025-12-13T15:20:52.562Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "Phase 4: rm Mode Implementation",
+      "details": "Full rm-compatible behavior with all supported flags",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Create RmArgs struct",
+          "details": "src/args/rm.rs: -f, -r/-R, -d, -v, --preserve-root, --no-preserve-root, --one-file-system",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "69efcd7d-4d56-46bf-bcfe-2f31dd191680",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "rm error format",
+          "details": "GNU rm format: \"rm: cannot remove 'file': Reason\"",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "1fbd8c86-01b1-4bb1-a440-2860c8c019c5",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Force mode semantics",
+          "details": "rm -f nonexistent → exit 0; rm nonexistent → exit 1",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "1eb50064-ef51-4291-8c53-54e62a5c14d0",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Directory handling",
+          "details": "rm dir → \"Is a directory\"; rm -r dir → graveyard; rm -d empty → graveyard",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "866292ab-fdad-4046-ba40-a314f8d8cc93",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Verbose output",
+          "details": "GNU format: removed 'filename'",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "52bb197f-3e99-4307-bcdb-ba5c5c2618c0",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Preserve-root protection",
+          "details": "Block rm -rf / by default; --no-preserve-root for root only",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "cd76baee-a784-4d83-8c23-b9b3986f7730",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Home depth protection",
+          "details": "Block depth ≤ 2: ~/Desktop; Allow depth > 2: ~/Desktop/project; Override: --yes-i-am-100-percent-certain",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "fe89fda2-a948-4f8c-a838-38d2639a95ce",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Write rm mode tests",
+          "details": "Test all flag combinations, error format, exit codes",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "a654819e-fc61-4c1c-9b09-25607195379d",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "6c8c0d33-6379-4274-90ce-745f50d85335",
+      "created_at": "2025-12-13T15:20:52.562Z",
+      "updated_at": "2025-12-13T15:20:52.562Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "Phase 5: Drop Windows Support",
+      "details": "Simplify by removing Windows-specific code",
+      "status": "pending",
+      "priority": "medium",
+      "sub_tasks": [
+        {
+          "name": "Remove Windows cfg blocks",
+          "details": "Remove #[cfg(target_os = \"windows\")] blocks from lib.rs and util.rs",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "9665dfe5-ea9e-43d5-860d-de8934577e09",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Update Cargo.toml",
+          "details": "Remove Windows dependencies if any",
+          "status": "pending",
+          "priority": "low",
+          "uuid": "aba50fbe-800d-4e2c-be39-708b2897fccc",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "89a8a39c-02ef-4f95-97df-50f1b4c0bfa5",
+      "created_at": "2025-12-13T15:20:52.562Z",
+      "updated_at": "2025-12-13T15:20:52.562Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "Phase 6: Testing & Documentation",
+      "details": "Comprehensive test coverage and updated documentation",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Adversarial safety tests",
+          "details": "Test that corrupted safety code causes test failures (e/test methodology)",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "705ec4a0-2513-4678-bafc-fd95f1ccd88b",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Edge case tests",
+          "details": "Symlinks to root, path traversal, non-standard home directories",
+          "status": "pending",
+          "priority": "high",
+          "uuid": "2398a9b4-2c13-4f62-9bbc-1629a7704bb8",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Update README",
+          "details": "Document safe-rm vision, usage, deployment (dpkg-divert)",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "5f2cceb5-7dbd-47fa-a226-17d23c152f2f",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        },
+        {
+          "name": "Migration guide",
+          "details": "Document migration from rip2 to safe-rm, graveyard location change",
+          "status": "pending",
+          "priority": "medium",
+          "uuid": "c57c1340-c13a-4f94-aca3-ade9a9a961d2",
+          "created_at": "2025-12-13T15:20:52.562Z",
+          "updated_at": "2025-12-13T15:20:52.562Z"
+        }
+      ],
+      "uuid": "ceb5a7c4-a430-44be-93f4-0593c201a095",
+      "created_at": "2025-12-13T15:20:52.562Z",
+      "updated_at": "2025-12-13T15:20:52.562Z",
+      "completion_percentage": 0
+    }
+  ],
+  "created_at": "2025-12-13T15:20:52.563Z",
+  "updated_at": "2025-12-13T15:31:38.594Z"
+}
