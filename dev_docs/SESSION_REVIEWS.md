@@ -271,3 +271,116 @@ Test correctly failed, confirming it catches real bugs.
 - **Clean focused session:** One phase, done completely
 - **All 87 tests passing** (52 integration + 31 unit + 3 safety + 1 doctest)
 - **Next phase:** Phase 3 (Mode Detection & CLI Restructure)
+
+---
+
+## Session ea890cd4 — Phase 3: Mode Detection
+
+**Date:** 2025-12-14
+**Branch:** safe-rm-opus45
+**Accomplishment:** Completed Phase 3 (Mode Detection) — all 3 tasks
+
+### The Work
+
+| Change | File | Lines |
+|--------|------|-------|
+| ExecutionMode enum | src/lib.rs | 45-50 |
+| detect_mode_from_inputs() | src/lib.rs | 62-82 |
+| detect_mode() + dispatch | src/main.rs | 13-28, 30-35 |
+| run_rip_mode() | src/main.rs | 39-79 |
+| run_rm_mode() | src/main.rs | 81-94 |
+| 8 unit tests | tests/unit_tests.rs | 313-402 |
+
+**Mode detection priority:**
+1. `RIP_MODE` env variable ("rm" or "rip") — for testing
+2. Binary name (argv[0]) — "rm" triggers Rm mode
+3. Default to Rip mode
+
+### Design Decision: Pure Function for Testability
+
+Instead of having `detect_mode()` directly read env vars and argv, I extracted the logic into `detect_mode_from_inputs(env_mode: Option<&str>, binary_name: &OsStr)` — a pure function that takes inputs and returns output with no side effects.
+
+This allowed clean unit testing without mocking env/process state. The wrapper `detect_mode()` in main.rs handles the actual reading.
+
+### The Adversarial Testing Tangle
+
+**What happened:** During adversarial testing, I used manual `.bak` files:
+```bash
+cp src/lib.rs src/lib.rs.bak
+# corrupt code
+cargo test  # verify failure
+mv src/lib.rs.bak src/lib.rs  # restore
+```
+
+After the third corruption, the backup file contained a *previous* corruption rather than clean code. Then I ran `git checkout src/lib.rs` which reverted ALL my Phase 3 changes, not just the corruption.
+
+Had to re-add the ExecutionMode code manually.
+
+**Lesson learned:** Use `git stash` instead:
+```bash
+git stash
+# corrupt code
+cargo test  # verify failure
+git stash pop  # clean restore
+```
+
+This was added to CLAUDE.md as Lesson #8.
+
+### Uncertainties
+
+**1. rm mode currently delegates to rip mode**
+
+For Phase 3, `run_rm_mode()` just calls `run_rip_mode()`. This verifies the infrastructure works, but actual rm-compatible behavior comes in Phase 4. I'm uncertain if there are edge cases where the mode should affect behavior *now* — but I stayed focused on Phase 3 scope.
+
+**2. ExecutionMode placement**
+
+I put ExecutionMode in lib.rs with a TODO comment: "Move to args/ module when splitting args.rs". This might be the wrong intermediate location — Phase 4 will restructure args anyway. But it works for now.
+
+### Surprises
+
+**1. Two tests caught the binary name corruption**
+
+When I corrupted `if binary_name == "rm"` to `if binary_name == "safe-rm"`, TWO tests failed:
+- `test_mode_detection_binary_name_rm`
+- `test_mode_detection_binary_name_safe_rm_does_not_match`
+
+The second test specifically checks that "safe-rm" does NOT trigger Rm mode. Good test coverage catches related edge cases.
+
+**2. 8 tests covered the logic well**
+
+I initially thought I might need more edge cases, but 8 tests covered:
+- Default behavior
+- Binary name detection (positive and negative)
+- Env override (both directions)
+- Case insensitivity
+- Invalid env fallthrough
+- Empty binary name
+
+### Untaken Paths
+
+**1. Could have added integration tests**
+
+I only added unit tests. An integration test that actually creates a symlink named "rm" and runs it would validate the real-world flow. Didn't do it — unit tests felt sufficient.
+
+**2. Could have made rm mode print differently**
+
+Even in Phase 3, I could have made rm mode print "rm:" in errors instead of "rip:". Stayed minimal — Phase 4 handles rm-specific behavior.
+
+**3. Could have used trait-based mode detection**
+
+Instead of a pure function, could have used a trait like `ModeDetector` with `detect()` method. Felt like overengineering for this use case.
+
+### Session Notes
+
+- **Three commits:** Implementation, CLAUDE.md update, lessons learned
+- **All 95 tests passing** (52 integration + 39 unit + 3 safety + 1 doctest)
+- **Plan progress:** 42% (Phases 1-3 complete)
+- **Next phase:** Phase 4 (rm Mode Implementation)
+
+### Post-Session Reflection
+
+The session review caught an important gap: I hadn't updated CLAUDE.md's "Current Status" section. janbam pointed out this wasn't actually a problem since the session wasn't over — but the review process surfaced it, and the fix was easy.
+
+The adversarial testing tangle was frustrating in the moment but valuable as a learning. The lessons (#8 and #9) added to CLAUDE.md will help future sessions avoid the same trap.
+
+Clean milestone. Solid foundation for Phase 4.
