@@ -1,4 +1,4 @@
-# Graveyard
+# Old (non-forked) rip Graveyard behavior
 
 The graveyard is where rip2 stores deleted files, allowing recovery via `rip -u`.
 
