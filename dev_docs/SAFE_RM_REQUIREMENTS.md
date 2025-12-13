@@ -166,21 +166,49 @@ No automatic cleanup. Root manages disk space as needed.
 
 ## System Deployment
 
-To make safe-rm the system's `rm`:
+### Debian/Ubuntu (recommended)
 
-1. Install safe-rm binary: `sudo cp safe-rm /usr/local/bin/safe-rm`
-2. Move original rm: `sudo mv /usr/bin/rm /usr/sbin/rm-real`
-3. Create symlinks:
-   ```bash
-   sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm       # rm mode
-   sudo ln -s /usr/local/bin/safe-rm /usr/local/bin/rip  # rip mode
-   ```
-4. Ensure `/usr/sbin` is only in root's PATH
+Use `dpkg-divert` to properly divert the original rm. This survives system updates - when coreutils gets updated, dpkg will install the new rm to the diverted location instead of overwriting our symlink.
 
-Result:
+```bash
+# Install safe-rm binary
+sudo cp safe-rm /usr/local/bin/safe-rm
+
+# Divert original rm (survives apt updates!)
+sudo dpkg-divert --add --rename --divert /usr/sbin/rm-real /usr/bin/rm
+
+# Create symlinks
+sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm         # rm mode
+sudo ln -s /usr/local/bin/safe-rm /usr/local/bin/rip  # rip mode
+```
+
+**To undo:**
+```bash
+sudo rm /usr/bin/rm /usr/local/bin/rip
+sudo dpkg-divert --remove --rename /usr/bin/rm
+```
+
+### Other Linux / macOS
+
+```bash
+# Install safe-rm binary
+sudo cp safe-rm /usr/local/bin/safe-rm
+
+# Move original rm (may be overwritten by system updates!)
+sudo mv /usr/bin/rm /usr/sbin/rm-real
+
+# Create symlinks
+sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm         # rm mode
+sudo ln -s /usr/local/bin/safe-rm /usr/local/bin/rip  # rip mode
+```
+
+**Note:** On non-Debian systems, system updates may restore the original rm. Consider using your distro's package diversion mechanism or creating a proper package.
+
+### Result
+
 - `rm file` → safe-rm in rm mode (rm-compatible interface)
-- `rip file` → safe-rm in rip mode (rip-style interface with -s, -u, etc.)
-- `rm-real` → original rm (root only, for emergencies)
+- `rip file` → safe-rm in rip mode (seance, unbury, etc.)
+- `rm-real` → original rm (root only, `/usr/sbin` not in normal PATH)
 
 ---
 
