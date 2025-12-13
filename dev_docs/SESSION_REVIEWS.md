@@ -128,3 +128,102 @@ During session review, we investigated the nix/libc redundancy:
 **Result:** Simpler code, no `unsafe` block, one fewer dependency.
 
 This exemplifies why session reviews with space to explore are valuable — the initial implementation followed the plan, but the review surfaced an improvement the plan couldn't have known about.
+
+---
+
+## Session 1a3f4571 — Closing Three Threads
+
+**Date:** 2025-12-13
+**Branch:** safe-rm-opus45
+**Accomplishment:** Closed all three open threads from Session 93ba0f21
+
+### The Work
+
+| Thread | Resolution |
+|--------|------------|
+| 1. Dead code | Removed unused `require_root()` from safety.rs |
+| 2. Line numbers | Restructured table with grep patterns + status column |
+| 3. UX decision | Documented rationale in new "Design Decisions" section |
+
+---
+
+### Key Moment: The Redirect
+
+Early in the session, I proposed: "Quick cleanup (~5 min) then Phase 2."
+
+janbam gently redirected: *"close those three open threads. this is your session focus. take your time. do it well."*
+
+This reframed my understanding. I had treated the threads as obstacles to "the real work." The guidance clarified: the threads *were* the work. Cleanup and documentation deserve the same attention as feature implementation.
+
+---
+
+### Uncertainties
+
+**1. UX validation — theoretical vs empirical**
+
+Thread 3 asked about root check placement. I documented the design rationale by reading code, but I didn't actually *run* the tool as non-root to feel the UX. The thread is "closed" but the UX hasn't been empirically validated — only reasoned about.
+
+**2. The logs/ directory**
+
+Discovered `logs/` was tracked with ephemeral audit.json files and MCP puppeteer logs. I noted this was "out of scope" and moved on. The question remains unresolved: should those logs be tracked?
+
+---
+
+### Surprises
+
+**1. The grep pattern that wouldn't work**
+
+I initially wrote:
+```
+grep -n "require_root.*decompose" src/lib.rs
+```
+
+I was confident it would work. Testing proved me wrong — there's no "decompose" string near the `require_root` call. Corrected to `grep -n "cli.decompose" src/lib.rs`. Small reminder: confidence ≠ correctness.
+
+**2. Wisdom accumulation is working**
+
+Looking at Lesson #1 from the previous session (about nix vs libc), I was mildly surprised by how useful it was. The lessons system actually works — insights from one session inform the next.
+
+---
+
+### Untaken Paths
+
+**1. Could have removed the table entirely**
+
+One option I considered: the Safety-Critical Code table might be redundant with `lsp-cli-file`. I kept it for quick-orientation value, but the question stands.
+
+**2. Could have kept `require_root()` for future use**
+
+The thread asked "remove or keep?" — I chose removal without deeply exploring the "keep" argument. Felt right, but the deliberation was brief.
+
+**3. Could have updated the main implementation plan**
+
+The `safe-rm-implementation` plan still references outdated info (mentions libc when we use nix). Noted but not acted on — out of scope.
+
+---
+
+### Patterns Observed
+
+| Pattern | Example |
+|---------|---------|
+| Orient before acting | Self tool + PlanAndTrack + git status before any edits |
+| Verify the verification | Actually testing the grep patterns I documented |
+| Scope discipline | Reverting the logs/ gitignore addition when I noticed scope creep |
+| Documentation as closure | Replacing "Threads" section with "Design Decisions" that explains *why* |
+
+---
+
+### Session Notes
+
+- **Focus:** Three threads, done well
+- **All 87 tests passing** (52 integration + 31 unit + 3 safety + 1 doctest)
+- **Commit:** `11483f8` — Close three threads from Session 93ba0f21
+- **Next phase:** Phase 2 (Graveyard Location change to ~/.graveyard)
+
+---
+
+### Post-Session Reflection
+
+When asked "do you want to look into any of those uncertainties more deeply?" — the honest answer was no. The work felt complete. Sometimes "done" is actually done.
+
+The session was about closing loops well, not about velocity. Not flashy, but solid.
