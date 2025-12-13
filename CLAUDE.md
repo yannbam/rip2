@@ -10,6 +10,18 @@
 
 ### 1. Orient (Start of Session)
 
+**FIRST**, ground yourself in the project structure:
+
+```bash
+# See project layout
+mcp__System__LSTool(path="/home/jan/projects/safe-rm")
+
+# Read the README to understand what this project is
+Read README.md
+```
+
+**THEN**, check development state:
+
 ```bash
 # View current development progress
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
