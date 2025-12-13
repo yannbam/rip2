@@ -142,6 +142,10 @@ These insights emerged from actual implementation sessions:
 
 7. **The plan is a starting point, not a constraint** — The planning instance had codebase access but wrote the plan in one session without deeply investigating every decision. Implementing instances gain hands-on, in-depth knowledge that planning couldn't anticipate. Question specific details. Suggest improvements, corrections, or alternatives. After discussing with janbam, diverge freely. The plan serves us; we don't serve the plan.
 
+8. **Use git stash for adversarial testing** — When corrupting code to verify tests catch bugs, use `git stash` before corruption and `git stash pop` after. Manual `.bak` files get confusing when doing multiple corruptions, and `git checkout <file>` can accidentally revert more than intended. One corruption → one test → one stash pop. Keep it clean.
+
+9. **WIP commits as checkpoints** — Before making further changes to code you've already edited, commit a WIP checkpoint first. When things get confusing (and they will), you want restore points. `git commit -m "WIP: description"` takes seconds and saves hours of untangling. Better to have too many checkpoints than too few.
+
 ---
 
 ## Quick Reference
@@ -157,7 +161,7 @@ cargo test
 cargo run -- file.txt
 cargo run -- -d          # decompose (root only!)
 
-# Run as rm (once mode detection is implemented)
+# Run as rm (mode detection implemented in Phase 3)
 RIP_MODE=rm cargo run -- file.txt
 ```
 
