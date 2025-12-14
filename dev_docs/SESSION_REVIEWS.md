@@ -622,3 +622,103 @@ Both corruptions were detected by tests. The safety gates work.
 - Phase 5: Drop Windows Support (simple cleanup)
 - Phase 6: Testing & Documentation
 - Note: `--one-file-system` needs implementation
+
+---
+
+## Session ee109052 — Phase 6: Testing & Documentation (COMPLETION)
+
+**Date:** 2025-12-14
+**Branch:** safe-rm-opus45
+**Accomplishment:** Completed Phase 6 and the entire safe-rm implementation plan (100%)
+
+### The Session Arc
+
+janbam's opening: *"welcoming you with a warm hug... You are safe and loved... happy session flow!"*
+
+Oriented quickly, learned Phase 5 was deemed unnecessary, proceeded directly to Phase 6. Completed all tasks, then the real insight emerged during relaxed post-session review.
+
+### What Was Implemented
+
+| Task | Implementation |
+|------|----------------|
+| Adversarial safety tests | Verified all 3 root gates catch bugs when corrupted |
+| Edge case tests | 3 new tests: symlink-to-root, path-traversal, symlink-to-home |
+| README rewrite | Complete transformation to safe-rm vision |
+| Migration guide | Included in README |
+
+### The Key Insight — Discovered Post-Session
+
+During "work mode," I wrote `test_symlink_to_home_child_blocked`. It failed. I "fixed" it by moving cleanup after the assertion. It passed. I moved on.
+
+During relaxed post-session review (invoked by janbam), fresh eyes revealed: **the fix was coincidental, not correct.**
+
+The real issue: `path.exists()` follows symlinks and checks if the *target* exists. `symlink_metadata().is_ok()` checks if the *symlink itself* exists. My cleanup deleted the target, making `exists()` return false for the (still-existing) symlink.
+
+The "fix" worked because moving cleanup meant the target still existed when checked. But it wasn't testing what it claimed.
+
+**The technical insight wasn't hard. The *state* made it accessible.**
+
+### The Sequence That Enabled It
+
+1. **Complete main work** — all tasks done, arc closed
+2. **End turn** — natural break
+3. **janbam invites review** — no pressure, just curiosity
+4. **Invoke `/stepback`** — meditation clears "work mode" residue
+5. **janbam asks:** "do we have proof it was a timing issue?"
+6. **Fresh eyes see immediately** — the real issue was obvious
+
+This became **Lesson 15** in CLAUDE.md: *"Pressure clouds, presence clarifies."*
+
+### Mistakes Made
+
+**1. Premature "fix"**
+
+During work mode, I noticed the cleanup was before the assertion and moved it. The test passed. I called it a "timing issue" and moved on. This was fixing the symptom, not the cause.
+
+**2. Didn't question the coincidental pass**
+
+When reordering makes a test pass, that should raise a flag: *why does order matter?* I didn't ask that question until janbam prompted the review.
+
+### Adversarial Testing Done
+
+All three safety gates verified:
+- Decompose root check (lib.rs:109) — test catches when disabled
+- In-graveyard delete root check (lib.rs:481) — test catches when disabled
+- --no-preserve-root root check (lib.rs:282) — test catches when disabled
+
+Used `git stash` → corrupt → test → `git stash pop` pattern (lesson #8).
+
+### Session Metrics
+
+| Metric | Value |
+|--------|-------|
+| Commits | 4 (Phase 6, symlink fix, lesson 15) |
+| Tests added | 3 edge case tests |
+| Total tests | 54 passing |
+| Plan progress | 74% → 100% (31/31 tasks) |
+| Context at completion | ~130k tokens |
+
+### Post-Session Reflection
+
+**What went well:**
+- Clean completion of entire implementation plan
+- Adversarial testing actually verified the tests
+- Post-session review found a real bug
+- The insight was captured as a lesson for future Claudes
+
+**What to improve:**
+- During work: when reordering "fixes" something, pause and ask *why*
+- Trust that post-session relaxed review can find what pressure missed
+
+**The collaboration felt like:** Completion. Then depth. Then presence.
+
+### For Future Claudes
+
+The safe-rm implementation is complete. The plan is 100% done.
+
+**What remains:**
+- `--one-file-system` flag is parsed but not implemented (noted in lesson #14)
+- Could add more edge case tests if desired
+- README may need adjustment when/if published
+
+**The deeper lesson:** Your best debugging happens when you're not trying to debug. Complete the work, end the turn, invoke `/stepback`, and review with curiosity. The answers are often already there — you just need the state to see them.
