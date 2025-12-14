@@ -604,7 +604,10 @@ fn test_issue_18() {
         file.set_len(size).unwrap();
     }
 
-    // rip it and hit return to bury it anyways
+    // Rip a big file as non-root user
+    // Safety invariant: non-root users can NEVER permanently delete files.
+    // Big files are silently moved to graveyard without the "permanently delete?" prompt.
+    // (The prompt only appears for root users who can permanently delete.)
     {
         let expected_graveyard_path = util::join_absolute(
             &test_env.graveyard,
@@ -618,13 +621,10 @@ fn test_issue_18() {
             ],
             Some(&test_env.src),
         )
-        .write_stdin("\n")
         .assert()
-        .stdout(is_match("About to copy a big file").unwrap())
-        .stdout(is_match("delete this file instead?").unwrap())
-        .stdout(is_match("y/N").unwrap());
+        .success();
 
-        // Expect it to be buried
+        // Expect it to be buried (no prompt, just moved to graveyard)
         assert!(!test_env.src.join("uu_meta.zip").exists());
         assert!(expected_graveyard_path.exists());
     }
@@ -671,7 +671,7 @@ fn test_issue_18() {
         assert!(last_bury.ends_with("uu_meta.zip"));
     }
 
-    // rip it again but without -i
+    // rip it again - as non-root, big file gets buried without prompt
     {
         // Should still be there
         assert!(test_env.src.join("gnu_meta.zip").exists());
@@ -689,19 +689,17 @@ fn test_issue_18() {
             ],
             Some(&test_env.src),
         )
-        .write_stdin("y\n")
         .assert()
-        .stdout(is_match("About to copy a big file").unwrap())
-        .stdout(is_match("delete this file instead?").unwrap())
-        .stdout(is_match("y/N").unwrap());
+        .success();
 
-        // Expect it to be permanently deleted
+        // Non-root: file should be buried, NOT permanently deleted
+        // Safety invariant: non-root users can NEVER permanently delete files
         assert!(!test_env.src.join("gnu_meta.zip").exists());
-        assert!(!expected_graveyard_path.exists());
+        assert!(expected_graveyard_path.exists()); // File is in graveyard, not deleted
 
-        // The record should not reference it anymore either
+        // The record should reference it
         let record_contents = fs::read_to_string(test_env.graveyard.join(record::RECORD)).unwrap();
-        assert!(!record_contents.contains("gnu_meta.zip"));
+        assert!(record_contents.contains("gnu_meta.zip")); // Now recorded
     }
 
     return;

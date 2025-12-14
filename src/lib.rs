@@ -151,6 +151,7 @@ pub fn run(
                 stream,
                 cli.force,
                 &dirs_to_create,
+                root_checker,
             )
             .map_err(|e| {
                 Error::new(
@@ -509,6 +510,7 @@ fn bury_target<const FILE_LOCK: bool>(
             stream,
             force,
             &dirs_to_create,
+            root_checker,
         )
         .map_err(|e| {
             fs::remove_dir_all(dest).ok();
@@ -680,6 +682,7 @@ pub fn move_target(
     stream: &mut impl Write,
     force: bool,
     dirs_to_create: &[DirToCreate],
+    root_checker: &impl RootChecker,
 ) -> Result<bool, Error> {
     // Try a simple rename, which will only work within the same mount point.
     // Trying to rename across filesystems will throw errno 18.
@@ -691,9 +694,9 @@ pub fn move_target(
     create_dirs_with_permissions(dirs_to_create)?;
 
     if fs::symlink_metadata(target)?.is_dir() {
-        move_dir(target, dest, mode, stream, force)
+        move_dir(target, dest, mode, stream, force, root_checker)
     } else {
-        let moved = copy_file(target, dest, mode, stream, force).map_err(|e| {
+        let moved = copy_file(target, dest, mode, stream, force, root_checker).map_err(|e| {
             Error::new(
                 e.kind(),
                 format!(
@@ -721,6 +724,7 @@ pub fn move_dir(
     mode: &impl util::TestingMode,
     stream: &mut impl Write,
     force: bool,
+    root_checker: &impl RootChecker,
 ) -> Result<bool, Error> {
     // Walk the source, creating directories and copying files as needed
     for entry in WalkDir::new(target).into_iter().filter_map(Result::ok) {
@@ -758,7 +762,7 @@ pub fn move_dir(
                 )
             })?;
         } else {
-            copy_file(entry.path(), &dest.join(orphan), mode, stream, force).map_err(|e| {
+            copy_file(entry.path(), &dest.join(orphan), mode, stream, force, root_checker).map_err(|e| {
                 Error::new(
                     e.kind(),
                     format!(
@@ -786,25 +790,31 @@ pub fn copy_file(
     mode: &impl util::TestingMode,
     stream: &mut impl Write,
     force: bool,
+    root_checker: &impl RootChecker,
 ) -> Result<bool, Error> {
     let metadata = fs::symlink_metadata(source)?;
     let filetype = metadata.file_type();
 
+    // Big file handling: offer permanent deletion option ONLY to root users
+    // Safety invariant: non-root users can NEVER permanently delete files
     if metadata.len() > BIG_FILE_THRESHOLD {
-        // In force mode, we default to copying big files
-        if !force
-            && util::prompt_yes(
-                format!(
-                    "About to copy a big file ({} is {})\nPermanently delete this file instead?",
-                    source.display(),
-                    util::humanize_bytes(metadata.len())
-                ),
-                mode,
-                stream,
-            )?
-        {
-            return Ok(false);
+        if root_checker.is_root() {
+            // Root user: offer choice between copying and permanent deletion
+            if !force
+                && util::prompt_yes(
+                    format!(
+                        "About to copy a big file ({} is {})\nPermanently delete this file instead?",
+                        source.display(),
+                        util::humanize_bytes(metadata.len())
+                    ),
+                    mode,
+                    stream,
+                )?
+            {
+                return Ok(false);
+            }
         }
+        // Non-root users: always copy to graveyard (no permanent deletion option)
     }
 
     if filetype.is_file() {
@@ -830,8 +840,9 @@ pub fn copy_file(
     match fs::copy(source, dest) {
         Err(e) => {
             // Special file: Try copying it as normal, but this probably won't work
-            // In force mode, we don't delete special files, we error
-            if !force
+            // Safety invariant: only root can permanently delete files
+            if root_checker.is_root()
+                && !force
                 && util::prompt_yes(
                     format!(
                         "Non-regular file or directory: {}\nPermanently delete the file?",
@@ -843,6 +854,8 @@ pub fn copy_file(
             {
                 Ok(false)
             } else {
+                // Non-root users: error on special files that can't be copied
+                // (they cannot choose permanent deletion)
                 Err(e)
             }
         }

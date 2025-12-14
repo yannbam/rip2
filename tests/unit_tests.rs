@@ -105,11 +105,13 @@ fn test_filetypes(
 
     let mut log = Vec::new();
     let mode = TestMode;
+    // Use root checker to test prompting behavior (prompts only shown to root)
+    let root_checker = MockRootChecker::root();
 
     if copy {
-        rip2::copy_file(&source_path, &dest_path, &mode, &mut log, false).unwrap();
+        rip2::copy_file(&source_path, &dest_path, &mode, &mut log, false, &root_checker).unwrap();
     } else {
-        rip2::move_target(&source_path, &dest_path, true, &mode, &mut log, false, &[]).unwrap();
+        rip2::move_target(&source_path, &dest_path, true, &mode, &mut log, false, &[], &root_checker).unwrap();
     }
 
     let log_s = String::from_utf8(log).unwrap();
@@ -261,11 +263,62 @@ fn fail_move_dir() {
     let dest = path_dest.join("foo");
     let target = path_target.join("bar");
     let mut log = Vec::new();
-    let results = rip2::move_dir(&target, &dest, &TestMode, &mut log, false);
+    let root_checker = MockRootChecker::non_root();
+    let results = rip2::move_dir(&target, &dest, &TestMode, &mut log, false, &root_checker);
     assert!(results.is_err());
     if let Err(e) = results {
         assert!(e.to_string().contains("Failed to remove dir"));
     }
+}
+
+/// ADVERSARIAL TEST: Verify non-root users CANNOT permanently delete big files.
+///
+/// Safety invariant: Non-root users can NEVER permanently delete files via rm.
+/// This test verifies that the big file "permanently delete?" prompt does NOT
+/// appear for non-root users - they simply copy to graveyard regardless of size.
+///
+/// ADVERSARIAL VERIFIED: Removing the root check at lib.rs copy_file (lines 800-814)
+/// causes this test to fail, proving the test actually catches the vulnerability.
+#[rstest]
+fn test_big_file_no_permanent_delete_prompt_for_non_root() {
+    let tmpdir = tempdir().unwrap();
+    let path = PathBuf::from(tmpdir.path());
+    let source_path = path.join("big_file");
+    let dest_path = path.join("big_file_copy");
+
+    // Create a big file (over BIG_FILE_THRESHOLD)
+    {
+        let file = fs::File::create(&source_path).unwrap();
+        let size = rip2::BIG_FILE_THRESHOLD + 1;
+        file.set_len(size).unwrap();
+    }
+
+    let mut log = Vec::new();
+    let mode = TestMode;
+    // Non-root user: should NOT see permanent delete prompt
+    let root_checker = MockRootChecker::non_root();
+
+    rip2::copy_file(&source_path, &dest_path, &mode, &mut log, false, &root_checker).unwrap();
+
+    let log_s = String::from_utf8(log).unwrap();
+
+    // CRITICAL ASSERTION: Non-root users should NOT see permanent delete prompt
+    assert!(
+        !log_s.contains("Permanently delete"),
+        "Safety violation! Non-root user saw permanent delete prompt: {}",
+        log_s
+    );
+    assert!(
+        !log_s.contains("delete this file instead"),
+        "Safety violation! Non-root user saw delete prompt: {}",
+        log_s
+    );
+
+    // The file should be COPIED to destination (not deleted)
+    assert!(
+        dest_path.exists(),
+        "Big file should be copied to graveyard for non-root users"
+    );
 }
 
 #[rstest]
