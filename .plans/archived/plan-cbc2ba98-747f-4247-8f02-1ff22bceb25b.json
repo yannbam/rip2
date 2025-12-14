@@ -1,0 +1,84 @@
+{
+  "uuid": "cbc2ba98-747f-4247-8f02-1ff22bceb25b",
+  "name": "fix-safety-loopholes",
+  "details": "Fix the big file and special file prompts that allow non-root users to permanently delete files. Audit for other similar bypasses.",
+  "tasks": [
+    {
+      "name": "Fix copy_file loopholes",
+      "details": "Add root check to copy_file function - non-root users cannot choose permanent deletion for big files or special files",
+      "status": "completed",
+      "priority": "urgent",
+      "sub_tasks": [
+        {
+          "name": "Add root_checker parameter",
+          "details": "Add RootChecker parameter to copy_file function",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "f954c9c2-085a-4976-b64a-a7e75fe7c82e",
+          "created_at": "2025-12-14T03:00:14.205Z",
+          "updated_at": "2025-12-14T03:01:08.206Z"
+        },
+        {
+          "name": "Gate big file prompt",
+          "details": "Only show permanent delete option for big files if user is root",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "6de341e2-a7e8-490a-a583-08c34ba8511d",
+          "created_at": "2025-12-14T03:00:14.205Z",
+          "updated_at": "2025-12-14T03:01:08.207Z"
+        },
+        {
+          "name": "Gate special file prompt",
+          "details": "Only show permanent delete option for special files if user is root",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "ba098204-c9ab-4cd7-b73d-d681d6f4c2e2",
+          "created_at": "2025-12-14T03:00:14.205Z",
+          "updated_at": "2025-12-14T03:01:08.207Z"
+        },
+        {
+          "name": "Update call sites",
+          "details": "Update move_target and move_dir to pass root_checker",
+          "status": "completed",
+          "priority": "urgent",
+          "uuid": "6bdd27e4-bcdf-400f-a39f-89f4e15d7e47",
+          "created_at": "2025-12-14T03:00:14.205Z",
+          "updated_at": "2025-12-14T03:02:39.856Z"
+        }
+      ],
+      "uuid": "bc252527-c45d-4547-958e-1e24f9700db0",
+      "created_at": "2025-12-14T03:00:14.205Z",
+      "updated_at": "2025-12-14T03:00:14.205Z",
+      "completion_percentage": 100
+    },
+    {
+      "name": "Audit for other loopholes",
+      "details": "Search codebase for any other paths that could lead to permanent deletion without root",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "13a73317-2675-4712-b885-7e7b46d0db1a",
+      "created_at": "2025-12-14T03:00:14.205Z",
+      "updated_at": "2025-12-14T03:07:01.329Z"
+    },
+    {
+      "name": "Add tests",
+      "details": "Add tests verifying non-root users cannot permanently delete via these prompts",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "7f526e1e-2380-4c10-93a0-4cb805d1aa4a",
+      "created_at": "2025-12-14T03:00:14.205Z",
+      "updated_at": "2025-12-14T03:09:26.788Z"
+    },
+    {
+      "name": "Verify fix",
+      "details": "Run all tests and verify the fix works correctly",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "779d7c8e-8602-451c-920e-90fa2f32df51",
+      "created_at": "2025-12-14T03:00:14.205Z",
+      "updated_at": "2025-12-14T03:07:01.329Z"
+    }
+  ],
+  "created_at": "2025-12-14T03:00:14.206Z",
+  "updated_at": "2025-12-14T03:09:28.018Z"
+}

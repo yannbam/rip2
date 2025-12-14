@@ -1,0 +1,12 @@
+🌳 "fix-safety-loopholes"
+📝 Fix the big file and special file prompts that allow non-root users to permanently delete files. Audit for other similar bypasses.
+📊 ██████████ 100% (8/8 tasks)
+
+├── ✅ |Fix copy_file loopholes| "Add root check to copy_file function - non-root users cannot choose permanent deletion for big files or special files" (🚨) (100%)
+│   ├── ✅ |Add root_checker parameter| "Add RootChecker parameter to copy_file function" (🚨)
+│   ├── ✅ |Gate big file prompt| "Only show permanent delete option for big files if user is root" (🚨)
+│   ├── ✅ |Gate special file prompt| "Only show permanent delete option for special files if user is root" (🚨)
+│   └── ✅ |Update call sites| "Update move_target and move_dir to pass root_checker" (🚨)
+├── ✅ |Audit for other loopholes| "Search codebase for any other paths that could lead to permanent deletion without root" (🔴)
+├── ✅ |Add tests| "Add tests verifying non-root users cannot permanently delete via these prompts" (🔴)
+└── ✅ |Verify fix| "Run all tests and verify the fix works correctly" (🔴)

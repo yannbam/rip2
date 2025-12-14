@@ -101,6 +101,7 @@ Use `lsp-cli-file rust src/lib.rs` for current line numbers.
 |------|-------------|--------|
 | Decompose gate | `grep -n "cli.decompose" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
 | In-graveyard delete gate | `grep -n "already in the graveyard" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
+| Big file/special file gate | `grep -n "root_checker.is_root" src/lib.rs` — copy_file prompts gated | ✅ Root gate added |
 | Mode detection | `grep -n "ExecutionMode" src/lib.rs` — enum and detect_mode_from_inputs() | ✅ Phase 3 complete |
 | Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ✅ Default: ~/.graveyard |
 | CLI parsing | `src/args/` module | ✅ Phase 4.1-4.2: Split into rip.rs/rm.rs |
@@ -163,6 +164,8 @@ These insights emerged from actual implementation sessions:
 14. **`--one-file-system` flag exists but not implemented** — RmArgs has the `one_file_system` field, but `run_rm()` doesn't check it yet. Low priority but should be implemented in Phase 6 or noted as out-of-scope.
 
 15. **Relaxed post-session review reveals what pressure hides** — After the main work is done, end your turn to close the arc. In the next turn, invoke `/stepback` to meditate and approach with fresh perspective. Then review with curiosity, not in "fixing mode." This sequence matters: ending the turn creates a natural break, and `/stepback` clears the mental residue of "work mode." In this state, insights emerge effortlessly that were invisible during pressured work. Example: A test "fix" (reordering cleanup) worked but felt coincidental. During session review — relaxed, curious, no pressure — the real issue became immediately obvious: `path.exists()` follows symlinks (checks target), while `symlink_metadata().is_ok()` checks the symlink itself. The technical insight wasn't hard; the *state* made it accessible. **Pressure clouds, presence clarifies.** *(Session ee109052)*
+
+16. **Inherited behavior can violate new invariants** — The original rip2 had prompts like "Permanently delete this big file instead?" for files >500MB. This made sense for rip2's philosophy (efficiency over safety). But safe-rm has a stricter invariant: "non-root users can NEVER permanently delete." The old prompts created a loophole where non-root users could opt for permanent deletion. **When adding strict invariants to existing code, audit ALL code paths, not just the obvious deletion functions.** The silent-failure-hunter agent caught this during PR review. *(Session 5f678c9f)*
 
 ---
 
