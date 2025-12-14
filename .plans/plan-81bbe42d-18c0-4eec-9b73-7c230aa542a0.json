@@ -156,38 +156,38 @@
         {
           "name": "rm error format",
           "details": "GNU rm format: \"rm: cannot remove 'file': Reason\"",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "1fbd8c86-01b1-4bb1-a440-2860c8c019c5",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T01:26:34.113Z"
         },
         {
           "name": "Force mode semantics",
           "details": "rm -f nonexistent → exit 0; rm nonexistent → exit 1",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "1eb50064-ef51-4291-8c53-54e62a5c14d0",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T01:26:34.113Z"
         },
         {
           "name": "Directory handling",
           "details": "rm dir → \"Is a directory\"; rm -r dir → graveyard; rm -d empty → graveyard",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "866292ab-fdad-4046-ba40-a314f8d8cc93",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T01:26:34.113Z"
         },
         {
           "name": "Verbose output",
           "details": "GNU format: removed 'filename'",
-          "status": "pending",
+          "status": "completed",
           "priority": "medium",
           "uuid": "52bb197f-3e99-4307-bcdb-ba5c5c2618c0",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T01:26:34.113Z"
         },
         {
           "name": "Preserve-root protection",
@@ -210,17 +210,17 @@
         {
           "name": "Write rm mode tests",
           "details": "Test all flag combinations, error format, exit codes",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "a654819e-fc61-4c1c-9b09-25607195379d",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T01:30:37.212Z"
         }
       ],
       "uuid": "6c8c0d33-6379-4274-90ce-745f50d85335",
       "created_at": "2025-12-13T15:20:52.562Z",
       "updated_at": "2025-12-13T15:20:52.562Z",
-      "completion_percentage": 22
+      "completion_percentage": 78
     },
     {
       "name": "Phase 5: Drop Windows Support",
@@ -302,5 +302,5 @@
     }
   ],
   "created_at": "2025-12-13T15:20:52.563Z",
-  "updated_at": "2025-12-14T00:40:27.443Z"
+  "updated_at": "2025-12-14T01:30:37.213Z"
 }

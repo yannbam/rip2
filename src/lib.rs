@@ -200,6 +200,170 @@ pub fn run(
     Ok(())
 }
 
+/// Result from rm mode execution.
+/// Contains success flag and any error messages printed.
+pub struct RmResult {
+    /// True if all operations succeeded
+    pub success: bool,
+}
+
+/// Run in rm mode with POSIX-compatible behavior.
+///
+/// Unlike `run()`, this handles rm-specific semantics:
+/// - Each target is processed independently (errors don't stop processing)
+/// - `-f` silences "no such file" errors
+/// - Directories require `-r` or `-d` flag
+/// - Verbose output with `-v`
+///
+/// Returns `RmResult` indicating overall success.
+pub fn run_rm(
+    cli: &args::RmArgs,
+    mode: impl util::TestingMode,
+    stream: &mut impl Write,
+    error_stream: &mut impl Write,
+    root_checker: &impl safety::RootChecker,
+) -> RmResult {
+    use record::{Record, DEFAULT_FILE_LOCK};
+
+    let graveyard: PathBuf = get_graveyard(None);
+
+    // Ensure graveyard exists
+    if !graveyard.exists() {
+        if let Err(e) = fs::create_dir_all(&graveyard) {
+            writeln!(error_stream, "rm: cannot create graveyard: {}", e).ok();
+            return RmResult { success: false };
+        }
+
+        #[cfg(unix)]
+        {
+            if let Err(e) = fs::set_permissions(&graveyard, fs::Permissions::from_mode(0o700)) {
+                writeln!(error_stream, "rm: cannot set graveyard permissions: {}", e).ok();
+                return RmResult { success: false };
+            }
+        }
+    }
+
+    let record = Record::<DEFAULT_FILE_LOCK>::new(&graveyard);
+    let cwd = match env::current_dir() {
+        Ok(cwd) => cwd,
+        Err(e) => {
+            writeln!(error_stream, "rm: cannot get current directory: {}", e).ok();
+            return RmResult { success: false };
+        }
+    };
+
+    let allow_rename = util::allow_rename();
+    let mut had_error = false;
+
+    // Process each target independently (rm doesn't stop on first error)
+    for target in &cli.targets {
+        // Check if target exists
+        let metadata = match fs::symlink_metadata(target) {
+            Ok(m) => m,
+            Err(_) => {
+                // File doesn't exist
+                if cli.force {
+                    // -f: silently ignore nonexistent files
+                    continue;
+                } else {
+                    writeln!(
+                        error_stream,
+                        "rm: cannot remove '{}': No such file or directory",
+                        target.display()
+                    )
+                    .ok();
+                    had_error = true;
+                    continue;
+                }
+            }
+        };
+
+        // Check directory handling
+        if metadata.is_dir() {
+            if !cli.recursive && !cli.dir {
+                // Need -r or -d to remove directories
+                writeln!(
+                    error_stream,
+                    "rm: cannot remove '{}': Is a directory",
+                    target.display()
+                )
+                .ok();
+                had_error = true;
+                continue;
+            }
+
+            // -d only works on empty directories
+            if cli.dir && !cli.recursive {
+                // Check if directory is empty
+                match fs::read_dir(target) {
+                    Ok(mut entries) => {
+                        if entries.next().is_some() {
+                            writeln!(
+                                error_stream,
+                                "rm: cannot remove '{}': Directory not empty",
+                                target.display()
+                            )
+                            .ok();
+                            had_error = true;
+                            continue;
+                        }
+                    }
+                    Err(e) => {
+                        writeln!(
+                            error_stream,
+                            "rm: cannot remove '{}': {}",
+                            target.display(),
+                            e
+                        )
+                        .ok();
+                        had_error = true;
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // Perform the burial (move to graveyard)
+        match bury_target(
+            target,
+            &graveyard,
+            &record,
+            &cwd,
+            false, // inspect: rm mode never prompts for inspection
+            allow_rename,
+            &mode,
+            stream,
+            cli.force,
+            root_checker,
+        ) {
+            Ok(()) => {
+                // Verbose output
+                if cli.verbose {
+                    writeln!(stream, "removed '{}'", target.display()).ok();
+                }
+            }
+            Err(e) => {
+                // Format error in rm style
+                let reason = match e.kind() {
+                    ErrorKind::PermissionDenied => "Permission denied".to_string(),
+                    ErrorKind::NotFound => "No such file or directory".to_string(),
+                    _ => e.to_string(),
+                };
+                writeln!(
+                    error_stream,
+                    "rm: cannot remove '{}': {}",
+                    target.display(),
+                    reason
+                )
+                .ok();
+                had_error = true;
+            }
+        }
+    }
+
+    RmResult { success: !had_error }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn bury_target<const FILE_LOCK: bool>(
     target: &PathBuf,

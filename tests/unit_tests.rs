@@ -1,5 +1,7 @@
 use lazy_static::lazy_static;
-use rip2::args::{validate_rip_args, RipArgs, RipCommands};
+use rip2::args::{validate_rip_args, RipArgs, RipCommands, RmArgs};
+use rip2::safety::MockRootChecker;
+use rip2::run_rm;
 use rip2::completions;
 use rip2::util::{humanize_bytes, TestMode};
 use rstest::rstest;
@@ -399,4 +401,223 @@ fn test_mode_detection_empty_binary_name() {
         detect_mode_from_inputs(None, OsStr::new("")),
         ExecutionMode::Rip
     );
+}
+
+// ============================================================================
+// rm mode tests
+// ============================================================================
+
+/// Helper to create RmArgs with defaults
+fn rm_args(targets: Vec<PathBuf>) -> RmArgs {
+    RmArgs {
+        targets,
+        force: false,
+        recursive: false,
+        dir: false,
+        verbose: false,
+        no_preserve_root: false,
+        preserve_root: false,
+        one_file_system: false,
+    }
+}
+
+#[rstest]
+fn test_rm_nonexistent_file_without_force() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Try to remove nonexistent file without -f
+    let cli = rm_args(vec![tempdir.path().join("nonexistent")]);
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail
+    assert!(!result.success);
+
+    // Should have error message in rm format
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("rm: cannot remove"));
+    assert!(stderr_str.contains("No such file or directory"));
+}
+
+#[rstest]
+fn test_rm_nonexistent_file_with_force() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Try to remove nonexistent file with -f → should succeed silently
+    let mut cli = rm_args(vec![tempdir.path().join("nonexistent")]);
+    cli.force = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should succeed (force mode silences missing files)
+    assert!(result.success);
+
+    // Should have no error output
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.is_empty());
+}
+
+#[rstest]
+fn test_rm_directory_without_recursive() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let dir_path = tempdir.path().join("testdir");
+    fs::create_dir(&dir_path).unwrap();
+
+    // Try to remove directory without -r → should fail
+    let cli = rm_args(vec![dir_path.clone()]);
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail
+    assert!(!result.success);
+
+    // Should have "Is a directory" error
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("Is a directory"));
+
+    // Directory should still exist
+    assert!(dir_path.exists());
+}
+
+#[rstest]
+fn test_rm_directory_with_recursive() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let dir_path = tempdir.path().join("testdir");
+    fs::create_dir(&dir_path).unwrap();
+    fs::write(dir_path.join("file.txt"), "content").unwrap();
+
+    // Remove directory with -r → should succeed
+    let mut cli = rm_args(vec![dir_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should succeed
+    assert!(result.success);
+
+    // Directory should be gone (moved to graveyard)
+    assert!(!dir_path.exists());
+}
+
+#[rstest]
+fn test_rm_empty_directory_with_d_flag() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let dir_path = tempdir.path().join("emptydir");
+    fs::create_dir(&dir_path).unwrap();
+
+    // Remove empty directory with -d → should succeed
+    let mut cli = rm_args(vec![dir_path.clone()]);
+    cli.dir = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should succeed
+    assert!(result.success);
+
+    // Directory should be gone
+    assert!(!dir_path.exists());
+}
+
+#[rstest]
+fn test_rm_nonempty_directory_with_d_flag() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let dir_path = tempdir.path().join("nonemptydir");
+    fs::create_dir(&dir_path).unwrap();
+    fs::write(dir_path.join("file.txt"), "content").unwrap();
+
+    // Remove non-empty directory with -d → should fail
+    let mut cli = rm_args(vec![dir_path.clone()]);
+    cli.dir = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail
+    assert!(!result.success);
+
+    // Should have "Directory not empty" error
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("Directory not empty"));
+
+    // Directory should still exist
+    assert!(dir_path.exists());
+}
+
+#[rstest]
+fn test_rm_verbose_output() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let file_path = tempdir.path().join("testfile.txt");
+    fs::write(&file_path, "content").unwrap();
+
+    // Remove with -v → should print "removed 'filename'"
+    let mut cli = rm_args(vec![file_path.clone()]);
+    cli.verbose = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should succeed
+    assert!(result.success);
+
+    // Should have verbose output
+    let stdout_str = String::from_utf8(stdout).unwrap();
+    assert!(stdout_str.contains("removed '"));
+
+    // File should be gone
+    assert!(!file_path.exists());
+}
+
+#[rstest]
+fn test_rm_multiple_files_partial_failure() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+    let file_path = tempdir.path().join("exists.txt");
+    fs::write(&file_path, "content").unwrap();
+
+    // Remove existing file + nonexistent file → should process both, report error
+    let cli = rm_args(vec![
+        file_path.clone(),
+        tempdir.path().join("nonexistent"),
+    ]);
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail (because one file didn't exist)
+    assert!(!result.success);
+
+    // But the existing file should still be removed
+    assert!(!file_path.exists());
+
+    // Error should mention the nonexistent file
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("nonexistent"));
 }

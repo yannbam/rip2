@@ -95,38 +95,22 @@ fn run_rm_mode() -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    // TODO(Phase 4): Implement rm-specific behavior
-    // For now, convert RmArgs to RipArgs-compatible behavior
-    // This is a temporary bridge until full rm mode implementation
-
+    // Handle missing operand
     if cli.targets.is_empty() {
         eprintln!("rm: missing operand");
         eprintln!("Try 'rm --help' for more information.");
         return ExitCode::FAILURE;
     }
 
-    // Create equivalent RipArgs for the bridge period
-    let rip_cli = args::RipArgs {
-        targets: cli.targets.clone(),
-        graveyard: None,
-        decompose: false,
-        seance: false,
-        unbury: None,
-        inspect: false,
-        force: cli.force,
-        command: None,
-    };
-
-    // Execute using rip mode logic
-    let mut stream = io::stdout();
+    // Execute rm mode with proper semantics
+    let mut stdout = io::stdout();
+    let mut stderr = io::stderr();
     let mode = util::ProductionMode;
-    let result = rip2::run(&rip_cli, mode, &mut stream, &rip2::safety::SystemRootChecker);
+    let result = rip2::run_rm(&cli, mode, &mut stdout, &mut stderr, &SystemRootChecker);
 
-    if let Err(ref e) = result {
-        // Use rm-style error format
-        eprintln!("rm: {e}");
-        return ExitCode::FAILURE;
+    if result.success {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
-
-    ExitCode::SUCCESS
 }
