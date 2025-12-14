@@ -9,7 +9,7 @@ use crate::args;
 pub fn generate_shell_completions(shell_s: &str, buf: &mut dyn Write) -> Result<()> {
     if "nu" == shell_s || "nushell" == shell_s {
         let shell = Nushell;
-        generate(shell, &mut args::Args::command(), "rip", buf);
+        generate(shell, &mut args::RipArgs::command(), "rip", buf);
     } else {
         let tryshell = Shell::from_str(shell_s);
         if tryshell.is_err() {
@@ -20,7 +20,7 @@ pub fn generate_shell_completions(shell_s: &str, buf: &mut dyn Write) -> Result<
                 )
             ));
         }
-        generate(tryshell.unwrap(), &mut args::Args::command(), "rip", buf);
+        generate(tryshell.unwrap(), &mut args::RipArgs::command(), "rip", buf);
     }
     Ok(())
 }

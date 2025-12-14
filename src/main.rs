@@ -4,7 +4,7 @@ use std::io;
 use std::path::Path;
 use std::process::ExitCode;
 
-use rip2::args::Commands;
+use rip2::args::RipCommands;
 use rip2::safety::SystemRootChecker;
 use rip2::{args, completions, detect_mode_from_inputs, util, ExecutionMode};
 
@@ -39,18 +39,18 @@ fn main() -> ExitCode {
 /// Run in rip mode: ergonomic interface with subcommands
 fn run_rip_mode() -> ExitCode {
     let base_cmd = Command::new("rip");
-    let cmd = args::Args::augment_args(base_cmd);
-    let cli = args::Args::from_arg_matches(&cmd.get_matches()).unwrap();
+    let cmd = args::RipArgs::augment_args(base_cmd);
+    let cli = args::RipArgs::from_arg_matches(&cmd.get_matches()).unwrap();
 
     match &cli.command {
-        Some(Commands::Completions { shell }) => {
+        Some(RipCommands::Completions { shell }) => {
             let result = completions::generate_shell_completions(shell, &mut io::stdout());
             if result.is_err() {
                 eprintln!("{}", result.unwrap_err());
                 return ExitCode::FAILURE;
             }
         }
-        Some(Commands::Graveyard { seance }) => {
+        Some(RipCommands::Graveyard { seance }) => {
             let graveyard = rip2::get_graveyard(None);
             if *seance {
                 let cwd = env::current_dir().expect("Failed to get current directory");

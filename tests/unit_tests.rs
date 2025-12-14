@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use rip2::args::{validate_args, Args, Commands};
+use rip2::args::{validate_rip_args, RipArgs, RipCommands};
 use rip2::completions;
 use rip2::util::{humanize_bytes, TestMode};
 use rstest::rstest;
@@ -33,21 +33,21 @@ fn aquire_lock() -> MutexGuard<'static, ()> {
 
 #[rstest]
 fn test_validation() {
-    let bad_completions = Args {
-        command: Some(Commands::Completions {
+    let bad_completions = RipArgs {
+        command: Some(RipCommands::Completions {
             shell: "bash".to_string(),
         }),
         decompose: true,
-        ..Args::default()
+        ..RipArgs::default()
     };
-    validate_args(&bad_completions).expect_err("--completions can only be used by itself");
+    validate_rip_args(&bad_completions).expect_err("--completions can only be used by itself");
 
-    let bad_decompose = Args {
+    let bad_decompose = RipArgs {
         decompose: true,
         seance: true,
-        ..Args::default()
+        ..RipArgs::default()
     };
-    validate_args(&bad_decompose).expect_err("-d,--decompose can only be used with --graveyard");
+    validate_rip_args(&bad_decompose).expect_err("-d,--decompose can only be used with --graveyard");
 }
 
 #[rstest]

@@ -34,20 +34,8 @@ pub mod util;
 
 use std::ffi::OsStr;
 
-// ============================================================================
-// Execution Mode Detection
-// ============================================================================
-
-/// Execution mode: determines CLI behavior and argument parsing
-///
-/// TODO(Phase 4): Move to args/ module when splitting args.rs
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExecutionMode {
-    /// Original rip behavior: ergonomic deletion with graveyard
-    Rip,
-    /// rm-compatible mode: POSIX-like interface, files still go to graveyard
-    Rm,
-}
+// Re-export ExecutionMode from args module
+pub use args::ExecutionMode;
 
 /// Detect execution mode from given inputs (pure function for testability)
 ///
@@ -83,7 +71,7 @@ pub fn detect_mode_from_inputs(env_mode: Option<&str>, binary_name: &OsStr) -> E
 
 // ============================================================================
 
-use args::Args;
+use args::RipArgs;
 use record::{Record, RecordItem, DEFAULT_FILE_LOCK};
 use safety::{require_root_for_permanent_deletion, RootChecker};
 
@@ -92,12 +80,12 @@ const FILES_TO_INSPECT: usize = 6;
 pub const BIG_FILE_THRESHOLD: u64 = 500_000_000; // 500 MB
 
 pub fn run(
-    cli: &Args,
+    cli: &RipArgs,
     mode: impl util::TestingMode,
     stream: &mut impl Write,
     root_checker: &impl RootChecker,
 ) -> Result<(), Error> {
-    args::validate_args(cli)?;
+    args::validate_rip_args(cli)?;
     let graveyard: &PathBuf = &get_graveyard(cli.graveyard.clone());
 
     if !graveyard.exists() {
@@ -190,7 +178,7 @@ pub fn run(
             writeln!(stream, "{}\t{}", formatted_time, grave.dest.display())?;
         }
     } else if cli.targets.is_empty() {
-        Args::command().print_help()?;
+        RipArgs::command().print_help()?;
     } else {
         let allow_rename = util::allow_rename();
         for target in &cli.targets {

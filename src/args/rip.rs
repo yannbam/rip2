@@ -1,3 +1,11 @@
+//! Rip mode argument parsing.
+//!
+//! Provides the ergonomic rip-style CLI with subcommands for:
+//! - File deletion (moving to graveyard)
+//! - Decompose (permanent deletion - root only)
+//! - Seance (list deleted files)
+//! - Unbury (restore deleted files)
+
 use anstyle::{AnsiColor, Color::Ansi, Style};
 use clap::builder::styling::Styles;
 use clap::{Parser, Subcommand};
@@ -70,6 +78,13 @@ Print the graveyard path
     }
 }
 
+/// Rip mode CLI arguments.
+///
+/// Provides an ergonomic interface for safe file deletion with:
+/// - Automatic graveyard management
+/// - Undo capability via unbury
+/// - Inspection before deletion
+/// - Subcommands for completions and graveyard info
 #[derive(Parser, Debug, Default)]
 #[command(
     name = "rip",
@@ -79,7 +94,7 @@ Print the graveyard path
     styles=STYLES,
     help_template = help_template("rip"),
 )]
-pub struct Args {
+pub struct RipArgs {
     /// Files and directories to remove
     pub targets: Vec<PathBuf>,
 
@@ -112,11 +127,12 @@ pub struct Args {
     pub force: bool,
 
     #[command(subcommand)]
-    pub command: Option<Commands>,
+    pub command: Option<RipCommands>,
 }
 
+/// Rip mode subcommands.
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub enum RipCommands {
     /// Generate shell completions file
     #[command(styles=STYLES, help_template=help_template("completions"))]
     Completions {
@@ -135,6 +151,7 @@ pub enum Commands {
     },
 }
 
+/// Helper for checking if arguments are at their default values.
 struct IsDefault {
     graveyard: bool,
     decompose: bool,
@@ -146,8 +163,8 @@ struct IsDefault {
 }
 
 impl IsDefault {
-    fn new(cli: &Args) -> Self {
-        let defaults = Args::default();
+    fn new(cli: &RipArgs) -> Self {
+        let defaults = RipArgs::default();
         Self {
             graveyard: cli.graveyard == defaults.graveyard,
             decompose: cli.decompose == defaults.decompose,
@@ -160,8 +177,14 @@ impl IsDefault {
     }
 }
 
+/// Validate rip mode arguments for compatibility.
+///
+/// Checks:
+/// - completions subcommand can only be used by itself
+/// - decompose can only be used with --graveyard
+/// - force and inspect are mutually exclusive
 #[allow(clippy::nonminimal_bool)]
-pub fn validate_args(cli: &Args) -> Result<(), Error> {
+pub fn validate_rip_args(cli: &RipArgs) -> Result<(), Error> {
     let defaults = IsDefault::new(cli);
 
     // [completions] can only be used by itself
