@@ -78,7 +78,7 @@ mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 src/
   main.rs         Entry point, mode detection, CLI dispatch (run_rip_mode/run_rm_mode)
-  lib.rs          Core logic: run(), detect_mode_from_inputs()
+  lib.rs          Core logic: run() for rip mode, run_rm() for rm mode
   args/           CLI argument parsing module
     mod.rs        ExecutionMode enum, re-exports
     rip.rs        RipArgs, RipCommands, validate_rip_args (ergonomic interface)
@@ -104,7 +104,8 @@ Use `lsp-cli-file rust src/lib.rs` for current line numbers.
 | Mode detection | `grep -n "ExecutionMode" src/lib.rs` — enum and detect_mode_from_inputs() | ✅ Phase 3 complete |
 | Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ✅ Default: ~/.graveyard |
 | CLI parsing | `src/args/` module | ✅ Phase 4.1-4.2: Split into rip.rs/rm.rs |
-| RmArgs | `src/args/rm.rs` | ✅ All flags implemented, bridges to rip logic |
+| RmArgs | `src/args/rm.rs` | ✅ All flags implemented |
+| rm mode core | `grep -n "pub fn run_rm" src/lib.rs` | ✅ Phase 4: Full rm semantics with safety gates |
 
 ---
 
@@ -200,17 +201,23 @@ nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteui
 **Phase 1: Safety Foundation — COMPLETE** (Session 93ba0f21)
 **Phase 2: Graveyard Location — COMPLETE** (Session 7bf25a31)
 **Phase 3: Mode Detection — COMPLETE** (Session ea890cd4)
-**Phase 4: rm Mode Implementation — IN PROGRESS** (Session 0b740f97)
+**Phase 4: rm Mode Implementation — COMPLETE** (Session 301a3e97)
   - ✅ 4.1: Split args.rs into args/ module
   - ✅ 4.2: Create RmArgs struct with all flags
-  - ⏳ 4.3-4.9: Remaining rm mode behavior
+  - ✅ 4.3: rm error format ("rm: cannot remove 'file': Reason")
+  - ✅ 4.4: Force mode (-f silences missing files, exit 0)
+  - ✅ 4.5: Directory handling (-r, -d flags)
+  - ✅ 4.6: Verbose output (-v flag)
+  - ✅ 4.7: Preserve-root protection (blocks rm -rf /)
+  - ✅ 4.8: Home depth protection (blocks rm -r ~/Desktop)
+  - ✅ 4.9: Tests (14 rm mode tests added)
 
 Check PlanAndTrack for live status:
 ```
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 
-**Next:** Phase 4.3 (rm error format) or Phase 4.4 (Force mode semantics)
+**Next:** Phase 5 (Drop Windows Support) or Phase 6 (Testing & Documentation)
 
 ### Design Decisions
 
