@@ -621,3 +621,99 @@ fn test_rm_multiple_files_partial_failure() {
     let stderr_str = String::from_utf8(stderr).unwrap();
     assert!(stderr_str.contains("nonexistent"));
 }
+
+#[rstest]
+fn test_rm_preserve_root_default() {
+    let _guard = aquire_lock();
+
+    // Attempt to remove "/" with default preserve-root → should fail
+    let cli = rm_args(vec![PathBuf::from("/")]);
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail
+    assert!(!result.success);
+
+    // Should have preserve-root error message
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("dangerous to operate recursively on '/'"));
+    assert!(stderr_str.contains("--no-preserve-root"));
+}
+
+#[rstest]
+fn test_rm_no_preserve_root_requires_root() {
+    let _guard = aquire_lock();
+
+    // Attempt to remove "/" with --no-preserve-root as non-root → should fail
+    let mut cli = rm_args(vec![PathBuf::from("/")]);
+    cli.no_preserve_root = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail (non-root can't use --no-preserve-root)
+    assert!(!result.success);
+
+    // Should have permission error
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("requires root"));
+}
+
+#[rstest]
+fn test_rm_home_depth_protection() {
+    let _guard = aquire_lock();
+
+    // Get home directory and create a test directory at depth 1
+    let home = dirs::home_dir().expect("Should have home dir");
+    let shallow_path = home.join("_test_protected_dir_safe_rm");
+
+    // Create the directory so it can be canonicalized
+    fs::create_dir_all(&shallow_path).unwrap();
+
+    // Attempt to remove with -r → should fail (depth 1 = protected)
+    let mut cli = rm_args(vec![shallow_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Clean up the test directory (we created it, protection should have blocked removal)
+    fs::remove_dir(&shallow_path).ok();
+
+    // Should fail due to home depth protection
+    assert!(!result.success);
+
+    // Should have protection error message
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(stderr_str.contains("protected home directory location"));
+}
+
+#[rstest]
+fn test_rm_home_deep_path_allowed() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Create a directory outside of home (tempdir is in /tmp)
+    let deep_path = tempdir.path().join("deep_test");
+    fs::create_dir(&deep_path).unwrap();
+
+    // Paths not under home should be allowed
+    let mut cli = rm_args(vec![deep_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should succeed (path is not under home)
+    assert!(result.success);
+    assert!(!deep_path.exists());
+}

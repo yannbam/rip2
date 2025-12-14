@@ -257,6 +257,70 @@ pub fn run_rm(
 
     // Process each target independently (rm doesn't stop on first error)
     for target in &cli.targets {
+        // Check preserve-root protection
+        // Canonicalize to catch things like "/../" or symlinks to /
+        let canonical = dunce::canonicalize(target).ok();
+        let is_root = canonical.as_ref().map(|p| p == Path::new("/")).unwrap_or(false)
+            || target.as_os_str() == "/";
+
+        if is_root {
+            if cli.should_preserve_root() {
+                writeln!(
+                    error_stream,
+                    "rm: it is dangerous to operate recursively on '/'",
+                )
+                .ok();
+                writeln!(
+                    error_stream,
+                    "rm: use --no-preserve-root to override this failsafe",
+                )
+                .ok();
+                had_error = true;
+                continue;
+            } else {
+                // --no-preserve-root requires root privileges
+                if !root_checker.is_root() {
+                    writeln!(
+                        error_stream,
+                        "rm: cannot remove '/': Operation not permitted (requires root)",
+                    )
+                    .ok();
+                    had_error = true;
+                    continue;
+                }
+                // Root user with --no-preserve-root: allow the operation
+            }
+        }
+
+        // Check home directory depth protection (only for recursive operations)
+        if cli.recursive {
+            if let Some(home) = dirs::home_dir() {
+                if let Some(ref canon) = canonical {
+                    // Check if path is under home directory
+                    if let Ok(relative) = canon.strip_prefix(&home) {
+                        // Count depth: ~/foo = 1, ~/foo/bar = 2, etc.
+                        let depth = relative.components().count();
+                        if depth <= 1 {
+                            // Block direct children of home: ~/Desktop, ~/Documents, etc.
+                            writeln!(
+                                error_stream,
+                                "rm: refusing to remove '{}': protected home directory location",
+                                target.display()
+                            )
+                            .ok();
+                            writeln!(
+                                error_stream,
+                                "rm: use 'rip' command if you really want to move this to graveyard",
+                            )
+                            .ok();
+                            had_error = true;
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
         // Check if target exists
         let metadata = match fs::symlink_metadata(target) {
             Ok(m) => m,
