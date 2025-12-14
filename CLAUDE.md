@@ -153,6 +153,10 @@ These insights emerged from actual implementation sessions:
 
 10. **replace_all can double-prefix** — When using the Edit tool's `replace_all` to rename `Args` to `RipArgs`, if the file already has some `RipArgs` from a previous import change, you'll get `RipRipArgs`. Always check for this pattern after bulk replacements, or do the import rename and internal renames in the same replace operation.
 
+11. **Survey blast radius before refactors** — Before renaming types or splitting modules, grep ALL source files: `grep -r "TypeName" src/`. Understanding the *extent* matters as much as understanding the *structure*. Missing `completions.rs` during the args split caused a build failure that was easily avoidable.
+
+12. **Re-run lsp-cli-file after major changes** — Line numbers shift during refactors. If you're working from cached mental models of "function X is at line 95", those become stale. After significant edits, refresh your understanding with another lsp-cli-file pass.
+
 ---
 
 ## Quick Reference
