@@ -158,6 +158,10 @@ These insights emerged from actual implementation sessions:
 
 12. **Re-run lsp-cli-file after major changes** — Line numbers shift during refactors. If you're working from cached mental models of "function X is at line 95", those become stale. After significant edits, refresh your understanding with another lsp-cli-file pass.
 
+13. **Verify before writing tests** — When writing new tests, don't assume you know the patterns. (a) Grep existing tests to see how similar functionality is tested — what helper functions exist, what struct initialization patterns are used. (b) Trace the actual code path the test will exercise — if your test relies on `dunce::canonicalize()` succeeding, the file must exist. Assumptions about "how it probably works" cause test failures that are trivially avoidable.
+
+14. **`--one-file-system` flag exists but not implemented** — RmArgs has the `one_file_system` field, but `run_rm()` doesn't check it yet. Low priority but should be implemented in Phase 6 or noted as out-of-scope.
+
 ---
 
 ## Quick Reference
