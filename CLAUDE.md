@@ -167,6 +167,12 @@ These insights emerged from actual implementation sessions:
 
 16. **Inherited behavior can violate new invariants** — The original rip2 had prompts like "Permanently delete this big file instead?" for files >500MB. This made sense for rip2's philosophy (efficiency over safety). But safe-rm has a stricter invariant: "non-root users can NEVER permanently delete." The old prompts created a loophole where non-root users could opt for permanent deletion. **When adding strict invariants to existing code, audit ALL code paths, not just the obvious deletion functions.** The silent-failure-hunter agent caught this during PR review. *(Session 5f678c9f)*
 
+17. **E2E testing deletion tools requires isolation** — Never test a deletion tool on your real filesystem. Use: (a) test user with tmpfs home for non-root tests, (b) Docker container for root tests. The tmpfs means all test data is in RAM only — unmount and it's gone. See `dev_docs/E2E_TESTING_SAFETY.md`. *(Session 47bc3637)*
+
+18. **Check binary timestamps when tests behave unexpectedly** — During E2E testing, files went to `/tmp/graveyard-*` instead of `~/.graveyard`. Root cause: the binary was built *before* Phase 2 changes. `cargo build --release` and copy fresh binary. Stale binaries cause mysterious "the code looks right but doesn't work" debugging sessions. *(Session 47bc3637)*
+
+19. **Custom graveyard paths are a security hole** — Non-root users can set `RIP_GRAVEYARD=/dev/null` and "move" files there = permanent deletion. This violates the core invariant. Future fix: non-root must use default graveyard. See Issue #5 in `dev_docs/ISSUES.md`. *(Session 47bc3637)*
+
 ---
 
 ## Quick Reference
