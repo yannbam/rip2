@@ -13,7 +13,7 @@ mod rm;
 pub use rip::{RipArgs, RipCommands, validate_rip_args};
 
 // Re-export rm mode types
-pub use rm::RmArgs;
+pub use rm::{RmArgs, validate_rm_args};
 
 /// Execution mode: determines CLI behavior and argument parsing.
 ///

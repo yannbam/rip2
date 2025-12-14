@@ -147,11 +147,11 @@
         {
           "name": "Create RmArgs struct",
           "details": "src/args/rm.rs: -f, -r/-R, -d, -v, --preserve-root, --no-preserve-root, --one-file-system",
-          "status": "pending",
+          "status": "completed",
           "priority": "high",
           "uuid": "69efcd7d-4d56-46bf-bcfe-2f31dd191680",
           "created_at": "2025-12-13T15:20:52.562Z",
-          "updated_at": "2025-12-13T15:20:52.562Z"
+          "updated_at": "2025-12-14T00:38:51.990Z"
         },
         {
           "name": "rm error format",
@@ -220,7 +220,7 @@
       "uuid": "6c8c0d33-6379-4274-90ce-745f50d85335",
       "created_at": "2025-12-13T15:20:52.562Z",
       "updated_at": "2025-12-13T15:20:52.562Z",
-      "completion_percentage": 11
+      "completion_percentage": 22
     },
     {
       "name": "Phase 5: Drop Windows Support",
@@ -302,5 +302,5 @@
     }
   ],
   "created_at": "2025-12-13T15:20:52.563Z",
-  "updated_at": "2025-12-14T00:34:53.992Z"
+  "updated_at": "2025-12-14T00:38:51.990Z"
 }

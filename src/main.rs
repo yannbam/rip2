@@ -81,15 +81,52 @@ fn run_rip_mode() -> ExitCode {
 
 /// Run in rm mode: POSIX-compatible interface
 ///
-/// TODO(Phase 4): Parse RmArgs instead of rip Args, implement rm-specific behavior
+/// Parses RmArgs with rm-compatible flags (-r, -f, -d, -v, etc.)
+/// Files are moved to graveyard instead of permanent deletion.
 fn run_rm_mode() -> ExitCode {
-    // For now, rm mode uses the same implementation as rip mode.
-    // Phase 4 will add:
-    // - RmArgs parsing with rm-compatible flags (-r, -f, -d, -v, etc.)
-    // - rm-style error messages ("rm: cannot remove 'file': reason")
-    // - rm exit code semantics
+    // Parse rm-style arguments
+    let base_cmd = Command::new("rm");
+    let cmd = args::RmArgs::augment_args(base_cmd);
+    let cli = args::RmArgs::from_arg_matches(&cmd.get_matches()).unwrap();
 
-    // Temporary: delegate to rip mode
-    // This ensures mode detection works without breaking existing functionality
-    run_rip_mode()
+    // Validate arguments
+    if let Err(e) = args::validate_rm_args(&cli) {
+        eprintln!("rm: {e}");
+        return ExitCode::FAILURE;
+    }
+
+    // TODO(Phase 4): Implement rm-specific behavior
+    // For now, convert RmArgs to RipArgs-compatible behavior
+    // This is a temporary bridge until full rm mode implementation
+
+    if cli.targets.is_empty() {
+        eprintln!("rm: missing operand");
+        eprintln!("Try 'rm --help' for more information.");
+        return ExitCode::FAILURE;
+    }
+
+    // Create equivalent RipArgs for the bridge period
+    let rip_cli = args::RipArgs {
+        targets: cli.targets.clone(),
+        graveyard: None,
+        decompose: false,
+        seance: false,
+        unbury: None,
+        inspect: false,
+        force: cli.force,
+        command: None,
+    };
+
+    // Execute using rip mode logic
+    let mut stream = io::stdout();
+    let mode = util::ProductionMode;
+    let result = rip2::run(&rip_cli, mode, &mut stream, &rip2::safety::SystemRootChecker);
+
+    if let Err(ref e) = result {
+        // Use rm-style error format
+        eprintln!("rm: {e}");
+        return ExitCode::FAILURE;
+    }
+
+    ExitCode::SUCCESS
 }
