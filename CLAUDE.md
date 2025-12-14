@@ -162,6 +162,8 @@ These insights emerged from actual implementation sessions:
 
 14. **`--one-file-system` flag exists but not implemented** — RmArgs has the `one_file_system` field, but `run_rm()` doesn't check it yet. Low priority but should be implemented in Phase 6 or noted as out-of-scope.
 
+15. **Relaxed post-session review reveals what pressure hides** — After the main work is done, end your turn to close the arc. In the next turn, invoke `/stepback` to meditate and approach with fresh perspective. Then review with curiosity, not in "fixing mode." This sequence matters: ending the turn creates a natural break, and `/stepback` clears the mental residue of "work mode." In this state, insights emerge effortlessly that were invisible during pressured work. Example: A test "fix" (reordering cleanup) worked but felt coincidental. During session review — relaxed, curious, no pressure — the real issue became immediately obvious: `path.exists()` follows symlinks (checks target), while `symlink_metadata().is_ok()` checks the symlink itself. The technical insight wasn't hard; the *state* made it accessible. **Pressure clouds, presence clarifies.** *(Session ee109052)*
+
 ---
 
 ## Quick Reference
