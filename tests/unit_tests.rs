@@ -832,12 +832,15 @@ fn test_symlink_to_home_child_blocked() {
         stderr_str
     );
 
+    // Clean up the protected directory (can do this before assertion now)
+    fs::remove_dir(&protected_dir).ok();
+
     // Symlink should still exist (not deleted)
+    // Note: Use symlink_metadata(), not exists(), because exists() follows
+    // the symlink and checks if the TARGET exists. We want to check if
+    // the symlink itself exists, regardless of its target.
     assert!(
-        symlink_path.exists(),
+        fs::symlink_metadata(&symlink_path).is_ok(),
         "Symlink should not have been deleted"
     );
-
-    // Clean up the protected directory AFTER all checks
-    fs::remove_dir(&protected_dir).ok();
 }
