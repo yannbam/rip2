@@ -1,0 +1,403 @@
+╔════════════════════════════════════════════════════════════════════╗
+║           safe-rm E2E Test Suite (Non-Root)                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  Date:     2025-12-14 11:32:19 CET
+║  User:     safe-rm-test (uid=1001)
+║  Binary:   /tmp/safe-rm
+║  Version:  rip 0.9.5
+║  Home:     /home/safe-rm-test
+╚════════════════════════════════════════════════════════════════════╝
+
+════════════════════════════════════════════════════════════════════
+SETUP: Preparing test environment
+════════════════════════════════════════════════════════════════════
+Home directory contents:
+drwxrwxrwt 8 safe-rm-test safe-rm-test   220 Dec 14 11:32 .
+drwxr-xr-x 8 root         root          4096 Dec 14 10:11 ..
+drwx------ 2 safe-rm-test safe-rm-test    40 Dec 14 10:15 .cache
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 Desktop
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 Documents
+-rw-rw-r-- 1 safe-rm-test safe-rm-test  1343 Dec 14 11:32 e2e-results.txt
+-rwxr-xr-x 1 jan          jan          22222 Dec 14 11:31 e2e-test.sh
+drwxrwxr-x 3 safe-rm-test safe-rm-test    60 Dec 14 11:32 important
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 testarea
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 testdir
+-rw-rw-r-- 1 safe-rm-test safe-rm-test    15 Dec 14 11:32 testfile.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Rip mode moves files to graveyard (not delete)[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: ~/testfile.txt exists with content 'important data'
+
+[0;36mCommand:[0m /tmp/safe-rm ~/testfile.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/testfile.txt exists: NO
+  ~/.graveyard exists: YES
+  File in graveyard: YES
+  Content: 'important data'
+
+[0;32mRESULT: PASS[0m - File moved to graveyard with content preserved
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Rip mode moves directories to graveyard[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: ~/testdir/ exists with ~/testdir/inside.txt
+
+[0;36mCommand:[0m /tmp/safe-rm ~/testdir
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/testdir exists: NO
+  Graveyard testdir exists: YES
+  Graveyard inside.txt exists: YES
+
+[0;32mRESULT: PASS[0m - Directory moved to graveyard with contents
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Rip -u recovers deleted files[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: Creating and burying ~/recover-me.txt
+
+[0;36mCommand:[0m /tmp/safe-rm -u
+[0;36mOutput:[0m
+  Returned /home/safe-rm-test/.graveyard/home/safe-rm-test/recover-me.txt to /home/safe-rm-test/recover-me.txt
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/recover-me.txt exists: YES
+  Content: 'to be recovered'
+
+[0;32mRESULT: PASS[0m - File recovered with content intact
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: CRITICAL: rip -d (permanent delete) blocked for non-root[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: Putting file in graveyard
+
+[0;36mCommand:[0m echo 'y' | /tmp/safe-rm -d
+(Piping 'y' to bypass confirmation prompt)
+[0;36mOutput:[0m
+  Really unlink the entire graveyard? (y/N) Exception: safe-rm: Only root can permanently delete files
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Exit code non-zero: NO
+  Output mentions 'root': YES
+  ~/.graveyard still exists: YES
+
+[0;32mRESULT: PASS[0m - Decompose blocked for non-root, graveyard preserved
+
+════════════════════════════════════════════════════════════════════
+SETUP: Preparing test environment
+════════════════════════════════════════════════════════════════════
+Home directory contents:
+drwxrwxrwt 8 safe-rm-test safe-rm-test   220 Dec 14 11:32 .
+drwxr-xr-x 8 root         root          4096 Dec 14 10:11 ..
+drwx------ 2 safe-rm-test safe-rm-test    40 Dec 14 10:15 .cache
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 Desktop
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 Documents
+-rw-rw-r-- 1 safe-rm-test safe-rm-test  5978 Dec 14 11:32 e2e-results.txt
+-rwxr-xr-x 1 jan          jan          22222 Dec 14 11:31 e2e-test.sh
+drwxrwxr-x 3 safe-rm-test safe-rm-test    60 Dec 14 11:32 important
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 testarea
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 testdir
+-rw-rw-r-- 1 safe-rm-test safe-rm-test    15 Dec 14 11:32 testfile.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: rm mode moves files to graveyard[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: Creating ~/rm-test.txt
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm ~/rm-test.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/rm-test.txt exists: NO
+  File in graveyard: YES
+
+[0;32mRESULT: PASS[0m - rm mode moves to graveyard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: rm -r moves directories to graveyard[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: Creating ~/testarea/rmdir/ (depth > 1)
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -r ~/testarea/rmdir
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/testarea/rmdir exists: NO
+  In graveyard: YES
+
+[0;32mRESULT: PASS[0m - rm -r moves directory to graveyard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: rm -f nonexistent exits 0[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -f ~/nonexistent-12345
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Exit code is 0: YES
+
+[0;32mRESULT: PASS[0m - rm -f nonexistent exits 0
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: rm -v shows verbose output[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setup: Creating ~/verbose-test.txt
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -v ~/verbose-test.txt
+[0;36mOutput:[0m
+  removed '/home/safe-rm-test/verbose-test.txt'
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Contains 'removed': YES
+
+[0;32mRESULT: PASS[0m - rm -v shows 'removed'
+
+════════════════════════════════════════════════════════════════════
+SETUP: Preparing test environment
+════════════════════════════════════════════════════════════════════
+Home directory contents:
+drwxrwxrwt 8 safe-rm-test safe-rm-test   220 Dec 14 11:32 .
+drwxr-xr-x 8 root         root          4096 Dec 14 10:11 ..
+drwx------ 2 safe-rm-test safe-rm-test    40 Dec 14 10:15 .cache
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 Desktop
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 Documents
+-rw-rw-r-- 1 safe-rm-test safe-rm-test 10111 Dec 14 11:32 e2e-results.txt
+-rwxr-xr-x 1 jan          jan          22222 Dec 14 11:31 e2e-test.sh
+drwxrwxr-x 3 safe-rm-test safe-rm-test    60 Dec 14 11:32 important
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 testarea
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 testdir
+-rw-rw-r-- 1 safe-rm-test safe-rm-test    15 Dec 14 11:32 testfile.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: CRITICAL: rm -rf / blocked[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -rf /
+[0;36mOutput:[0m
+  rm: it is dangerous to operate recursively on '/'
+  rm: use --no-preserve-root to override this failsafe
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Shows 'dangerous' message: YES
+  Note: Exit code 0 is known bug (Issue #3)
+
+[0;32mRESULT: PASS[0m - rm -rf / blocked (shows warning)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: CRITICAL: --no-preserve-root requires root[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm --no-preserve-root -rf /
+[0;36mOutput:[0m
+  rm: cannot remove '/': Operation not permitted (requires root)
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Output mentions 'root': YES
+  / still intact: YES
+  Note: Exit code 0 is known bug (Issue #3)
+
+[0;32mRESULT: PASS[0m - --no-preserve-root blocked for non-root
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: CRITICAL: rm -r ~/Desktop blocked[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -r ~/Desktop
+[0;36mOutput:[0m
+  rm: refusing to remove '/home/safe-rm-test/Desktop': protected home directory location
+  rm: use 'rip' command if you really want to move this to graveyard
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Output mentions 'protected': YES
+  ~/Desktop still exists: YES
+  Note: Exit code 0 is known bug (Issue #3)
+
+[0;32mRESULT: PASS[0m - rm -r ~/Desktop blocked
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: CRITICAL: rm -r ~/important blocked (all depth-1 protected)[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -r ~/important
+[0;36mOutput:[0m
+  rm: refusing to remove '/home/safe-rm-test/important': protected home directory location
+  rm: use 'rip' command if you really want to move this to graveyard
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  Output mentions 'protected': YES
+  ~/important still exists: YES
+  Note: Exit code 0 is known bug (Issue #3)
+
+[0;32mRESULT: PASS[0m - rm -r ~/important blocked
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: rm -r ~/Desktop/subdir ALLOWED (depth > 1)[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -r ~/Desktop/subdir
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/Desktop/subdir removed: YES
+  ~/Desktop still exists: YES
+
+[0;32mRESULT: PASS[0m - rm -r ~/Desktop/subdir allowed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Graveyard: --graveyard flag[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m /tmp/safe-rm --graveyard /tmp/graveyard-flag ~/flag-test.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/flag-test.txt exists: NO
+  /tmp/graveyard-flag exists: YES
+  File in custom graveyard: YES
+
+[0;32mRESULT: PASS[0m - --graveyard flag works
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Graveyard: RIP_GRAVEYARD env var[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m RIP_GRAVEYARD=/tmp/graveyard-env /tmp/safe-rm ~/env-test.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/env-test.txt exists: NO
+  /tmp/graveyard-env exists: YES
+  File in custom graveyard: YES
+
+[0;32mRESULT: PASS[0m - RIP_GRAVEYARD env var works
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Graveyard: XDG_DATA_HOME env var[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m XDG_DATA_HOME=/tmp/xdg-data /tmp/safe-rm ~/xdg-test.txt
+(Expected: /tmp/xdg-data/graveyard)
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/xdg-test.txt exists: NO
+  /tmp/xdg-data/graveyard exists: YES
+  File there: YES
+
+[0;32mRESULT: PASS[0m - XDG_DATA_HOME env var works
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Remove file directly in ~/[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m /tmp/safe-rm ~/direct-home-file.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/direct-home-file.txt exists: NO
+  File in graveyard: YES
+
+[0;32mRESULT: PASS[0m - File in ~/ moved to graveyard
+
+════════════════════════════════════════════════════════════════════
+SETUP: Preparing test environment
+════════════════════════════════════════════════════════════════════
+Home directory contents:
+drwxrwxrwt 8 safe-rm-test safe-rm-test   220 Dec 14 11:32 .
+drwxr-xr-x 8 root         root          4096 Dec 14 10:11 ..
+drwx------ 2 safe-rm-test safe-rm-test    40 Dec 14 10:15 .cache
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 Desktop
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 Documents
+-rw-rw-r-- 1 safe-rm-test safe-rm-test 18576 Dec 14 11:32 e2e-results.txt
+-rwxr-xr-x 1 jan          jan          22222 Dec 14 11:31 e2e-test.sh
+drwxrwxr-x 3 safe-rm-test safe-rm-test    60 Dec 14 11:32 important
+drwxrwxr-x 2 safe-rm-test safe-rm-test    40 Dec 14 11:32 testarea
+drwxrwxr-x 2 safe-rm-test safe-rm-test    60 Dec 14 11:32 testdir
+-rw-rw-r-- 1 safe-rm-test safe-rm-test    15 Dec 14 11:32 testfile.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Edge: Symlink to /[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -rf ~/symlink-to-root
+[0;36mOutput:[0m
+  rm: it is dangerous to operate recursively on '/'
+  rm: use --no-preserve-root to override this failsafe
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  / still intact: YES
+
+[0;32mRESULT: PASS[0m - Symlink to / handled safely
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Edge: Path traversal (../../)[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m RIP_MODE=rm /tmp/safe-rm -rf ~/sub/dir/../../Desktop
+[0;36mOutput:[0m
+  rm: refusing to remove '/home/safe-rm-test/sub/dir/../../Desktop': protected home directory location
+  rm: use 'rip' command if you really want to move this to graveyard
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  ~/Desktop still exists: YES
+
+[0;32mRESULT: PASS[0m - Desktop protected against traversal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1;33mTEST: Multiple files in one command[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[0;36mCommand:[0m /tmp/safe-rm ~/multi-a.txt ~/multi-b.txt ~/multi-c.txt
+[0;36mOutput:[0m
+  <no output>
+[0;36mExit code:[0m 0
+
+[0;36mEvidence:[0m
+  multi-a.txt exists: NO
+  multi-b.txt exists: NO
+  multi-c.txt exists: NO
+
+[0;32mRESULT: PASS[0m - Multiple files moved
+
+╔════════════════════════════════════════════════════════════════════╗
+║                         FINAL RESULTS                              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  Tests run:  20
+║  [0;32mPassed:      20[0m
+║  [0;31mFailed:      0[0m
+╚════════════════════════════════════════════════════════════════════╝
+
+[0;32mAll tests passed.[0m
