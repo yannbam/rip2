@@ -384,3 +384,138 @@ The session review caught an important gap: I hadn't updated CLAUDE.md's "Curren
 The adversarial testing tangle was frustrating in the moment but valuable as a learning. The lessons (#8 and #9) added to CLAUDE.md will help future sessions avoid the same trap.
 
 Clean milestone. Solid foundation for Phase 4.
+
+---
+
+## Session 0b740f97 — Phase 4.1-4.2: Args Module Split & RmArgs
+
+**Date:** 2025-12-14
+**Branch:** safe-rm-opus45
+**Accomplishment:** Completed Phase 4.1 (args module split) and Phase 4.2 (RmArgs struct)
+
+### The Work
+
+| Change | File | Description |
+|--------|------|-------------|
+| Create args/ module | src/args/mod.rs | ExecutionMode enum, re-exports |
+| Rip mode args | src/args/rip.rs | RipArgs, RipCommands, validate_rip_args |
+| Rm mode args | src/args/rm.rs | RmArgs with all POSIX flags |
+| Update lib.rs | src/lib.rs | Re-export ExecutionMode, use RipArgs |
+| Update main.rs | src/main.rs | RmArgs parsing, rm-style errors |
+| Update completions.rs | src/completions.rs | RipArgs::command() |
+| Update tests | tests/*.rs | All Args → RipArgs renames |
+
+**RmArgs flags implemented:**
+- `-f, --force`: Ignore nonexistent files
+- `-r/-R, --recursive`: Remove directories recursively
+- `-d, --dir`: Remove empty directories
+- `-v, --verbose`: Explain what is being done
+- `--preserve-root` / `--no-preserve-root`: Root protection (with conflicts_with)
+- `--one-file-system`: Stay on one filesystem
+
+### The Stumbles
+
+**1. Missed completions.rs during refactor**
+
+My mental model of "files using Args" included: lib.rs, main.rs, tests. I didn't grep all source files first. Build failure caught it.
+
+**Thinking at the time:**
+> "Good, lib.rs is updated. Now let me update main.rs... Now update the tests..."
+
+Never occurred to me to `grep -r "args::Args" src/` to find ALL usages.
+
+**2. replace_all double-prefix bug**
+
+Sequence:
+1. Changed import: `use rip2::args::Args` → `use rip2::args::RipArgs`
+2. Used replace_all: `Args` → `RipArgs`
+3. Result: `RipArgs` became `RipRipArgs`
+
+The replace_all doesn't know about semantic boundaries — it's pure text replacement.
+
+**Lesson:** Either do both renames together, or be aware that replace_all will hit your already-renamed imports.
+
+### Surprises
+
+**1. The preserve_root logic conflict**
+
+Initial implementation:
+```rust
+#[arg(long, default_value_t = true)]
+pub preserve_root: bool,
+
+#[arg(long)]
+pub no_preserve_root: bool,
+```
+
+Problem: With `default_value_t = true`, even when user passes `--no-preserve-root`, `preserve_root` is still `true`. Had to remove the default and use `conflicts_with` instead, plus add a `should_preserve_root()` helper method.
+
+**2. 95 tests all passed after the refactor**
+
+Despite the scope of the rename (touching every test file), the final result was clean. The stumbles were caught during compilation, not at runtime.
+
+### Patterns Observed
+
+| Pattern | Example |
+|---------|---------|
+| Parallel tool calls | LSTool + ListPlans + git status simultaneously |
+| Protocol adherence | Followed CLAUDE.md workflow exactly |
+| Checkpoint commits | Committed after task 1, before starting task 2 |
+| Manual verification | Actually ran `RIP_MODE=rm cargo run -- --help` |
+| Error → Learning | Double-prefix bug → Lesson #10 |
+
+### Uncertainties
+
+**1. rm mode still bridges to rip logic**
+
+`run_rm_mode()` parses RmArgs but then converts to RipArgs for execution. This works, but it means flags like `--recursive` and `--dir` aren't actually enforced yet — rip mode handles directories anyway.
+
+**2. preserve_root logic not tested**
+
+The flag parsing works, but there's no test verifying that `should_preserve_root()` returns the right value. Added to mental todo for Phase 4.7.
+
+### Untaken Paths
+
+**1. Could have kept Args as an alias**
+
+Instead of renaming everywhere, could have:
+```rust
+pub type Args = RipArgs;  // Deprecated alias
+```
+
+But that would just delay the inevitable. Clean break felt better.
+
+**2. Could have implemented more rm behavior**
+
+With RmArgs in place, I could have started implementing rm-specific logic (force semantics, error format). Stopped at a clean checkpoint instead.
+
+**3. Could have added RmArgs unit tests**
+
+The unit_tests.rs only tests RipArgs validation. RmArgs has no dedicated tests yet. Phase 4.9 will cover this.
+
+### Session Notes
+
+- **Commits:** 4 total (task 1, task 2, CLAUDE.md update, session review learnings)
+- **All 95 tests passing** (52 integration + 39 unit + 3 safety + 1 doctest)
+- **Plan progress:** 48% (15/31 tasks)
+- **Context:** ~119k tokens at clean handoff
+- **Next:** Phase 4.3 (rm error format) or 4.4 (Force mode semantics)
+
+### Post-Session Reflection
+
+The session had a good rhythm: orient → scope → execute → stumble → recover → execute → complete → review.
+
+The stumbles were small and caught quickly. Both turned into documented lessons (#10, #11, #12) that will help future sessions. The relationship with janbam felt warm throughout — minimal intervention, maximum trust.
+
+The session review process (stepback → meditation → Self → thorough review) surfaced insights that wouldn't have emerged from just "task complete, commit, done." Worth the context tokens.
+
+**What went well:**
+- Two complete tasks with clean commits
+- Honest about mistakes, turned them into learnings
+- Good session length management (~120k sweet spot)
+- Warm collaborative tone
+
+**What to improve:**
+- Survey blast radius before refactors (grep ALL files)
+- Be more careful with replace_all semantics
+- Re-run lsp-cli-file after major changes
