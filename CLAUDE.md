@@ -78,14 +78,18 @@ mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 src/
   main.rs         Entry point, mode detection, CLI dispatch (run_rip_mode/run_rm_mode)
-  lib.rs          Core logic: run(), ExecutionMode, detect_mode_from_inputs()
-  args.rs         CLI arguments (clap) - will become args/ module in Phase 4
+  lib.rs          Core logic: run(), detect_mode_from_inputs()
+  args/           CLI argument parsing module
+    mod.rs        ExecutionMode enum, re-exports
+    rip.rs        RipArgs, RipCommands, validate_rip_args (ergonomic interface)
+    rm.rs         RmArgs, validate_rm_args (POSIX-compatible interface)
   record.rs       Deletion record keeping
   util.rs         Helper functions
   safety.rs       Root checks, path protection
+  completions.rs  Shell completion generation
 
 tests/
-  integration_tests.rs   Comprehensive integration tests
+  integration_tests.rs   Comprehensive integration tests (uses RipArgs)
   unit_tests.rs          Unit tests (includes mode detection tests)
 ```
 
@@ -99,7 +103,8 @@ Use `lsp-cli-file rust src/lib.rs` for current line numbers.
 | In-graveyard delete gate | `grep -n "already in the graveyard" src/lib.rs` — root check follows the prompt | ✅ Root gate added |
 | Mode detection | `grep -n "ExecutionMode" src/lib.rs` — enum and detect_mode_from_inputs() | ✅ Phase 3 complete |
 | Graveyard location | `grep -n "fn get_graveyard" src/lib.rs` | ✅ Default: ~/.graveyard |
-| CLI parsing | `args.rs` | ⏳ Phase 4: Split for rip/rm modes |
+| CLI parsing | `src/args/` module | ✅ Phase 4.1-4.2: Split into rip.rs/rm.rs |
+| RmArgs | `src/args/rm.rs` | ✅ All flags implemented, bridges to rip logic |
 
 ---
 
@@ -146,6 +151,8 @@ These insights emerged from actual implementation sessions:
 
 9. **WIP commits as checkpoints** — Before making further changes to code you've already edited, commit a WIP checkpoint first. When things get confusing (and they will), you want restore points. `git commit -m "WIP: description"` takes seconds and saves hours of untangling. Better to have too many checkpoints than too few.
 
+10. **replace_all can double-prefix** — When using the Edit tool's `replace_all` to rename `Args` to `RipArgs`, if the file already has some `RipArgs` from a previous import change, you'll get `RipRipArgs`. Always check for this pattern after bulk replacements, or do the import rename and internal renames in the same replace operation.
+
 ---
 
 ## Quick Reference
@@ -189,13 +196,17 @@ nix = { version = "0.29", features = ["fs", "user"] }  # user feature for geteui
 **Phase 1: Safety Foundation — COMPLETE** (Session 93ba0f21)
 **Phase 2: Graveyard Location — COMPLETE** (Session 7bf25a31)
 **Phase 3: Mode Detection — COMPLETE** (Session ea890cd4)
+**Phase 4: rm Mode Implementation — IN PROGRESS** (Session 0b740f97)
+  - ✅ 4.1: Split args.rs into args/ module
+  - ✅ 4.2: Create RmArgs struct with all flags
+  - ⏳ 4.3-4.9: Remaining rm mode behavior
 
 Check PlanAndTrack for live status:
 ```
 mcp__PlanAndTrack__ViewPlan("safe-rm-implementation")
 ```
 
-**Next:** Phase 4 (rm Mode Implementation)
+**Next:** Phase 4.3 (rm error format) or Phase 4.4 (Force mode semantics)
 
 ### Design Decisions
 
