@@ -717,3 +717,127 @@ fn test_rm_home_deep_path_allowed() {
     assert!(result.success);
     assert!(!deep_path.exists());
 }
+
+// ============================================================================
+// Edge Case Tests: Symlinks and Path Traversal
+// ============================================================================
+
+/// Test that symlinks pointing to / are caught by preserve-root protection.
+/// Attack vector: Create symlink pointing to /, try to rm -r the symlink.
+#[rstest]
+#[cfg(unix)]
+fn test_symlink_to_root_blocked() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Create a symlink that points to /
+    let symlink_path = tempdir.path().join("root_link");
+    std::os::unix::fs::symlink("/", &symlink_path).unwrap();
+
+    // Attempt to rm -r the symlink → should be blocked by preserve-root
+    let mut cli = rm_args(vec![symlink_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail due to preserve-root
+    assert!(!result.success);
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(
+        stderr_str.contains("dangerous to operate recursively on '/'"),
+        "Should mention dangerous to operate on /: {}",
+        stderr_str
+    );
+
+    // Symlink should still exist (not deleted)
+    assert!(symlink_path.exists());
+}
+
+/// Test that path traversal attempts (/../) are caught after canonicalization.
+/// Attack vector: Use paths like /tmp/foo/../../ to try to reach /.
+#[rstest]
+#[cfg(unix)]
+fn test_path_traversal_to_root_blocked() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Create a path that traverses up to root: /tmp/xxx/../../
+    // After canonicalization this becomes /
+    let traversal_path = tempdir.path().join("..").join("..").join("..");
+
+    // Attempt to rm -r → should be blocked by preserve-root
+    let mut cli = rm_args(vec![traversal_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    // Should fail due to preserve-root
+    assert!(!result.success);
+    let stderr_str = String::from_utf8(stderr).unwrap();
+    assert!(
+        stderr_str.contains("dangerous to operate recursively on '/'"),
+        "Path traversal to / should be blocked: {}",
+        stderr_str
+    );
+}
+
+/// Test that symlinks to protected home directories are caught.
+/// Attack vector: Create symlink to ~/Desktop, try to rm -r the symlink.
+#[rstest]
+#[cfg(unix)]
+fn test_symlink_to_home_child_blocked() {
+    let _guard = aquire_lock();
+    let tempdir = tempdir().unwrap();
+
+    // Get home directory
+    let home = match dirs::home_dir() {
+        Some(h) => h,
+        None => return, // Skip if no home dir
+    };
+
+    // Create a real directory under home that we'll protect
+    let protected_dir = home.join("_test_protected_safe_rm");
+    fs::create_dir_all(&protected_dir).unwrap();
+
+    // Create a symlink in tempdir pointing to this protected directory
+    let symlink_path = tempdir.path().join("home_link");
+    std::os::unix::fs::symlink(&protected_dir, &symlink_path).unwrap();
+
+    // Attempt to rm -r the symlink → should be blocked by home depth protection
+    let mut cli = rm_args(vec![symlink_path.clone()]);
+    cli.recursive = true;
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mode = TestMode;
+
+    let result = run_rm(&cli, mode, &mut stdout, &mut stderr, &MockRootChecker::non_root());
+
+    let stderr_str = String::from_utf8(stderr).unwrap();
+
+    // Should fail due to home depth protection
+    assert!(
+        !result.success,
+        "Expected failure but got success. stderr: {}",
+        stderr_str
+    );
+    assert!(
+        stderr_str.contains("protected home directory location"),
+        "Symlink to home child should be blocked: {}",
+        stderr_str
+    );
+
+    // Symlink should still exist (not deleted)
+    assert!(
+        symlink_path.exists(),
+        "Symlink should not have been deleted"
+    );
+
+    // Clean up the protected directory AFTER all checks
+    fs::remove_dir(&protected_dir).ok();
+}

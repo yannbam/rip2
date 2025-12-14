@@ -1,264 +1,246 @@
 <div align="center">
 
-# rip2
+# safe-rm
 
-### A safer, rust-based `rm`
+### A drop-in `rm` replacement where permanent deletion requires root
 
 [![crates](https://img.shields.io/crates/v/rip2.svg)](https://crates.io/crates/rip2)
 [![CI](https://github.com/MilesCranmer/rip2/actions/workflows/ci.yml/badge.svg)](https://github.com/MilesCranmer/rip2/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/MilesCranmer/rip2/graph/badge.svg?token=1Ezb7PjJ0Z)](https://codecov.io/gh/MilesCranmer/rip2)
 
 </div>
 
-`rip` is a rust-based `rm` with a focus on safety, ergonomics, and performance.  It favors a simple interface, and does *not* implement the xdg-trash spec or attempt to achieve the same goals.
+**safe-rm** transforms the `rm` command into a recoverable operation. Files are moved to `~/.graveyard` instead of being permanently deleted, giving you a chance to recover from mistakes.
 
-Deleted files get sent to the graveyard 🪦 (typically `/tmp/graveyard-$USER`, see [notes](#notes) on changing this) under their absolute path, giving you a chance to recover them 🧟. No data is overwritten. If files that share the same path are deleted, they will be renamed as numbered backups.
+**Core Safety Invariant:** Non-root users can NEVER permanently delete files via `rm`.
 
-rip2 is a maintained fork of [nivekuil/rip](https://github.com/nivekuil/rip) with several improvements:
+## Why safe-rm?
 
-- **Cross-platform support** (Linux, macOS, Windows)
-- **Modernised codebase** (refactored in modern Rust, merged upstream PRs)
-- **Improved safety** (file locking to prevent races, stricter permission handling, bug fixes)
-- **Better tooling** (shell completions via clap, full test suite with coverage, clearer timestamped output)
+Traditional `rm` is unforgiving. One typo in `rm -rf` and your data is gone forever. safe-rm changes this:
 
-## Quick start
+- **Recoverable by default** - Files go to the graveyard, not oblivion
+- **Permanent deletion requires root** - Only `sudo` can truly delete
+- **Drop-in replacement** - Works with existing scripts and muscle memory
+- **Built-in protections** - Blocks `rm -rf /` and accidental home directory deletion
 
-Install:
-
-```bash
-brew install rip2
-```
-
-Delete files and directories (no `-rf` needed):
+## Quick Start
 
 ```bash
-rip file.txt dir1 dir2
+# Install
+cargo install --locked rip2
+
+# Use like rm (files go to graveyard)
+rm file.txt           # Moved to ~/.graveyard
+rm -rf project/       # Moved to ~/.graveyard
+
+# Recover mistakes
+rip -u                # Restore last deleted file
+rip -s                # See what's in the graveyard
+
+# Permanent deletion (requires root)
+sudo rip -d           # Empty the graveyard
 ```
 
-Undo the last deletion:
+## Two Modes
+
+safe-rm provides two interfaces:
+
+### rm mode (POSIX-compatible)
+
+When invoked as `rm`, it behaves like GNU rm but moves files to the graveyard instead of deleting:
 
 ```bash
-rip -u
+rm file.txt                 # Move to graveyard
+rm -r directory/            # Move directory to graveyard
+rm -f nonexistent           # Silent, exit 0 (like GNU rm)
+rm -v file.txt              # Verbose: "removed 'file.txt'"
 ```
 
-More details below.
+### rip mode (ergonomic)
 
-## ⚰️ Installation
-
-This package is supported on Linux, macOS, and Windows.
-
-### Homebrew
-
-On macOS or Linux with Homebrew installed:
+When invoked as `rip`, it provides a friendlier interface:
 
 ```bash
-brew install rip2
+rip file.txt dir/           # No -r needed for directories
+rip -u                      # Undo last deletion
+rip -s                      # Seance: see deleted files from current directory
+rip -i file.txt             # Inspect before deleting
 ```
+
+## Safety Protections
+
+### Preserve-root (blocks `rm -rf /`)
+
+```bash
+rm -rf /                    # Error: "dangerous to operate recursively on '/'"
+rm -rf /*                   # Each path checked individually
+```
+
+### Home directory protection
+
+```bash
+rm -r ~/Desktop             # Error: "protected home directory location"
+rm -r ~/Documents           # Error: protected
+rm -r ~/Desktop/project     # OK: depth > 1 from home
+```
+
+### Permanent deletion requires root
+
+```bash
+rip -d                      # Error: "Only root can permanently delete files"
+sudo rip -d                 # OK: empties the graveyard
+```
+
+## Installation
 
 ### Cargo
-
-1. First [install Rust](https://doc.rust-lang.org/cargo/getting-started/installation.html).
-2. Then, install this package with cargo:
 
 ```bash
 cargo install --locked rip2
 ```
 
-### Binaries
-
-Binary releases for different architectures and operating systems are
-made available on the GitHub releases page: https://github.com/MilesCranmer/rip2/releases/
-
-To install, simply open the archive and move the binary somewhere you can run it.
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/rip2.svg?columns=2)](https://repology.org/project/rip2/versions)
-
-### Nix
-
-This repository is also flake-compatible, and backwards-compatible with non-flake systems. Just run the following to test it out:
+### From source
 
 ```bash
-nix develop "github:MilesCranmer/rip2"
+git clone https://github.com/MilesCranmer/rip2
+cd rip2
+cargo install --path .
 ```
 
-### Other
+### As system rm replacement (Debian/Ubuntu)
 
-<details><summary>A few other package repositories have contributed support:</summary>
-
-
-### Additional Nix options
-
-The repo uses `flake-compat` for compatibility, and `naersk` to build the Rust package from source.
-
-<details><summary>Details:</summary>
-
-**Add To Path Temporarily (With Flakes)**:
+To make safe-rm your system's default `rm`:
 
 ```bash
-nix shell "github:MilesCranmer/rip2"
+# Build and install
+cargo build --release
+sudo cp target/release/rip /usr/local/bin/safe-rm
+
+# Divert system rm and replace with safe-rm
+sudo dpkg-divert --add --rename --divert /usr/bin/rm.real /usr/bin/rm
+sudo ln -s /usr/local/bin/safe-rm /usr/bin/rm
 ```
 
-**Flake minimal setup**:
+To revert:
 
-```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rip2 = {
-      url = "github:MilesCranmer/rip2";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs = inputs@{ self, nixpkgs, rip2, ... }:
-  {
-    nixosConfigurations.your-host = let
-      system = "x86_64-linux";  # or your system
-      lib = nixpkgs.lib;
-    in lib.nixosSystem {
-      inherit system;
-      modules = [
-        ./configuration.nix # or other configuration options
-        # ...
-        {
-          environment.systemPackages = [
-            rip2.packages.${system}.default
-          ];
-        }
-      ];
-    };
-  };
-}
+```bash
+sudo rm /usr/bin/rm
+sudo dpkg-divert --remove --rename /usr/bin/rm
 ```
-</details>
-
-
-### openSUSE
-
-```
-zypper ar -f obs://utilities
-zypper in rip2
-```
-
-</details>
 
 ## Usage
 
+### rip mode
+
 ```text
 Usage: rip [OPTIONS] [FILES]...
-       rip [SUBCOMMAND]
 
 Arguments:
     [FILES]...  Files and directories to remove
 
 Options:
-      --graveyard <GRAVEYARD>  Directory where deleted files rest
-  -d, --decompose              Permanently deletes the graveyard
-  -s, --seance                 Prints files that were deleted in the current directory
-  -u, --unbury                 Restore the specified files or the last file if none are specified
-  -i, --inspect                Print some info about FILES before burying
-  -f, --force                  Non-interactive mode
-  -h, --help                   Print help
-  -V, --version                Print version
-
-Sub-commands:
-  completions  Generate shell completions file
-  graveyard    Print the graveyard path
-  help         Print this message or the help of the given subcommand(s)
+      --graveyard <PATH>  Directory where deleted files rest (default: ~/.graveyard)
+  -d, --decompose         Permanently delete the graveyard (requires root)
+  -s, --seance            Print files deleted from the current directory
+  -u, --unbury            Restore the last deleted file, or specified files
+  -i, --inspect           Print info about files before deletion
+  -f, --force             Non-interactive mode
+  -h, --help              Print help
+  -V, --version           Print version
 ```
 
-Basic usage -- easier than rm
+### rm mode
 
-```bash
-rip dir1/ file1
+```text
+Usage: rm [OPTIONS] [FILES]...
+
+Options:
+  -f, --force             Ignore nonexistent files, never prompt
+  -r, -R, --recursive     Remove directories and their contents
+  -d, --dir               Remove empty directories
+  -v, --verbose           Explain what is being done
+      --preserve-root     Do not remove '/' (default)
+      --no-preserve-root  Allow removing '/' (requires root)
+  -h, --help              Print help
 ```
 
-Undo the last deletion
+## Graveyard
+
+The graveyard is where "deleted" files rest until permanently removed. Default location: `~/.graveyard`
+
+### Customizing location
 
 ```bash
+# Via environment variable
+export RIP_GRAVEYARD=~/.local/share/Trash
+
+# Via command line
+rip --graveyard /path/to/graveyard file.txt
+```
+
+### Managing the graveyard
+
+```bash
+rip graveyard             # Print graveyard path
+rip -s                    # List files deleted from current directory
+rip -u                    # Restore most recently deleted file
+rip -u path/in/graveyard  # Restore specific file
+sudo rip -d               # Permanently delete graveyard contents
+```
+
+## Examples
+
+### Basic workflow
+
+```bash
+# Accidentally delete important file
+rm important.doc
+
+# Realize mistake, check graveyard
+rip -s
+# ~/.graveyard/home/user/important.doc
+
+# Restore it
 rip -u
-# Returned /tmp/graveyard-jack/home/jack/file1 to /home/jack/file1
+# Returned ~/.graveyard/home/user/important.doc to /home/user/important.doc
 ```
 
-Print some info (size and first few lines in a file, total size and first few files in a directory) about the target and then prompt for deletion
+### Batch restore
 
 ```bash
-rip -i file1
-# dir1: file, 1337 bytes including:
-# > Position: Shooting Guard and Small Forward ▪ Shoots: Right
-# > 6-6, 185lb (198cm, 83kg)
-# Send file1 to the graveyard? (y/n) y
-```
-
-Print files that were deleted from under the current directory
-
-```bash
-rip -s
-# /tmp/graveyard-jack/home/jack/file1
-# /tmp/graveyard-jack/home/jack/dir1
-```
-
-Name conflicts are resolved
-
-```bash
-touch file1
-rip file1
-rip -s
-# /tmp/graveyard-jack/home/jack/dir1
-# /tmp/graveyard-jack/home/jack/file1
-# /tmp/graveyard-jack/home/jack/file1~1
-```
-
--u also takes the path of a file in the graveyard
-
-```bash
-rip -u /tmp/graveyard-jack/home/jack/file1
-# Returned /tmp/graveyard-jack/home/jack/file1 to /home/jack/file1
-```
-
-Combine -u and -s to restore everything printed by -s
-
-```bash
+# Restore everything deleted from current directory
 rip -su
-# Returned /tmp/graveyard-jack/home/jack/dir1 to /home/jack/dir1
-# Returned /tmp/graveyard-jack/home/jack/file1~1 to /home/jack/file1~1
 ```
 
-## Notes
-
-**Aliases.**
-
-You probably shouldn't alias `rm` to `rip`.  Unlearning muscle memory is hard, but it's harder to ensure that every `rm` you make (as different users, from different machines and application environments) is the aliased one.
-
-What I instead recommend is aliasing `rm` to an echo statement that simply reminds you to use `rip`:
+### Inspect before delete
 
 ```bash
-alias rm="echo Use 'rip' instead of rm."
+rip -i large_directory/
+# large_directory: directory, 1.2 GB, 3847 files including:
+#   src/
+#   README.md
+#   ...
+# Send large_directory to the graveyard? (y/n)
 ```
 
-**Graveyard location.**
+## Migration from rip2
 
-You can see the current graveyard location by running `rip graveyard`.
-If you have `$XDG_DATA_HOME` environment variable set, `rip` will use `$XDG_DATA_HOME/graveyard` instead of the `$TMPDIR/graveyard-$USER`.
+safe-rm is a fork of rip2 with these changes:
 
-If you want to put the graveyard somewhere else (like `~/.local/share/Trash`), you have two options, in order of precedence:
+1. **Default graveyard changed** from `/tmp/graveyard-$USER` to `~/.graveyard`
+2. **Permanent deletion requires root** - `rip -d` now fails for non-root users
+3. **rm mode added** - Can be used as drop-in rm replacement
+4. **Safety protections** - preserve-root and home directory depth protection
 
-  1. Alias `rip` to `rip --graveyard ~/.local/share/Trash`
-  2. Set the environment variable `$RIP_GRAVEYARD` to `~/.local/share/Trash`.
+If you have files in the old `/tmp/graveyard-$USER` location, move them:
 
-This can be a good idea because if the graveyard is mounted on an in-memory file system (as `/tmp` is in Arch Linux), deleting large files can quickly fill up your RAM. It's also much slower to move files across file systems, although the delay should be minimal with an SSD.
+```bash
+mv /tmp/graveyard-$USER/* ~/.graveyard/
+```
 
-**Force mode.**
+## License
 
-The `-f --force` flag enables non-interactive mode, which skips most prompts and automatically uses safe and reasonable behavior:
+GPLv3 - See [LICENSE](LICENSE) for details.
 
-- Big files are copied to the graveyard without prompting
-- Files already in the graveyard are permanently deleted without prompting
-- Special, non-movable files will error
+## Acknowledgments
 
-**Miscellaneous.**
-
-In general, a deletion followed by a `--unbury` should be idempotent.
-
-The deletion log is kept in `.record`, found in the top level of the graveyard.
+safe-rm is based on [rip2](https://github.com/MilesCranmer/rip2) by Miles Cranmer, which is a fork of [rip](https://github.com/nivekuil/rip) by Kevin Liu.
